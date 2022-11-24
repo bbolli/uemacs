@@ -5,72 +5,55 @@
 
 /*	possible names and paths of help files under different OSs	*/
 
-char *pathname[] =
+char *pathname[] =  {
 
 #if	AMIGA
-{
 	".emacsrc",
 	"emacs.hlp",
 	"",
 	"sys:c/",
 	"sys:t/",
 	"sys:s/",
-	":c/",
+	"c:/",
 	":t/",
 	":s/"
-};
-#endif
 
-#if	ST520
-{
+#elif	ST520
 	"emacs.rc",
 	"emacs.hlp",
 	"\\",
 	"\\bin\\",
 	"\\util\\",
 	""
-};
-#endif
-
-#if	FINDER
-{
+	
+#elif	FINDER
 	"emacs.rc",
 	"emacs.hlp",
-	"/bin",
-	"/sys/public",
-	""
-};
-#endif
-
-#if	MSDOS
-{
+	"",
+	"/bin/",
+	"/sys/public/"
+	
+#elif	MSDOS
 	"emacs.rc",
 	"emacs.hlp",
-	"\\sys\\public\\",
-	"\\usr\\bin\\",
-	"\\bin\\",
-	"\\",
-	""
-};
-#endif
+	"",
+	"c:/util/",
+	"c:/tc/"
 
-#if	V7 | BSD | USG
-{
+#elif	V7 | BSD | USG
 	".emacsrc",
 	"emacs.hlp",
 	"/usr/local/",
 	"/usr/lib/",
 	""
-};
-#endif
 
-#if	VMS
-{
+#elif	VMS
 	"emacs.rc",
 	"emacs.hlp",
 	"",
 	"sys$sysdevice:[vmstools]"
-};
-#endif
 
-#define	NPNAMES	(sizeof(pathname)/sizeof(char *))
+#endif
+};
+
+#define NPNAMES (sizeof(pathname)/sizeof(char *))

@@ -2,7 +2,14 @@
 
 The routines in this file provide support for the Atari 520 or 1040ST
 using VT52 emulation.  The I/O services are provided here as well.  It
-compiles into nothing if not a 520ST style device.
+compiles into nothing if not a 520ST style device. The only compiler
+supported directly is Mark Williams C
+
+Additional code and ideas from:
+
+		James Turner
+		Jeff Lomicka
+		J. C. Benoist
 
 */
 
@@ -12,516 +19,27 @@ compiles into nothing if not a 520ST style device.
 #include        "estruct.h"
 #include	"edef.h"
 
-#if     ATARI & ST520 & MEGAMAX
-#include	<osbind.h>
-#include	<ctype.h>
-
-#define LINEA_INIT 0xA000
-#define V_CEL_WR   -0x28
-
-#define V_CEL_MY   -0x2a
-#define V_CEL_HT   -0x2e
-#define V_FNT_AD   -0x16
-#define V_OFF_AD   -0x0a
-#define V_DISAB    -346
-
-#define NROW    25                      /* Screen size.                 */
-#define NCOL    80                      /* Edit if you want to.         */
-#define	MARGIN	8			/* size of minimim margin and	*/
-#define	SCRSIZ	64			/* scroll size for extended lines */
-#define	NPAUSE	25			/* # times thru update to pause */
-#define BIAS    0x20                    /* Origin 0 coordinate bias.    */
-#define ESC     0x1B                    /* ESC character.               */
-#define BEL     0x07                    /* ascii bell character         */
-
-extern  int     ttopen();               /* Forward references.          */
-extern  int     ttgetc();
-extern  int     ttputc();
-extern  int     ttflush();
-extern  int     ttclose();
-extern  int     st520move();
-extern  int     st520eeol();
-extern  int     st520eeop();
-extern  int     st520beep();
-extern  int     st520open();
-extern	int	st520close();
-extern	int	st520rev();
-extern  int st520kopen();
-extern  int st520kclose();
-extern	int st520chgrez();
-
-#if	COLOR
-extern	int	st520fcol();
-extern	int	st520bcol();
-
-int		cfcolor = -1;		/* current fg (character) color */
-int		cbcolor = -1;		/* current bg color */
-int		oldpal[8];		/* pallette when emacs was invoked */
-int		newpal[8] = {		/* default emacs pallette */
-	0x000, 0x700, 0x070, 0x770, 0x007, 0x707, 0x077, 0x777};
-#endif
-
-int STncolors = 0;		/* number of colors  */
-int STrez;			/* physical screen resolution */	
+#if	ATARI & ST520
 
 /*
- * Dispatch table. All the
- * hard fields just point into the
- * terminal I/O code.
- */
-TERM    term    = {
-        NROW-1,
-        NCOL,
-	MARGIN,
-	MARGIN,
-	SCRSIZ,
-	NPAUSE,
-        &st520open,
-        &st520close,
-	&st520kopen,
-	&st520kclose,
-        &ttgetc,
-        &ttputc,
-        &ttflush,
-        &st520move,
-        &st520eeol,
-        &st520eeop,
-        &st520beep,
-        &st520rev
-#if	MULTREZ
-	, &st520chgrez
-#endif
-#if	COLOR
-	, &st520fcol,
-	&st520bcol
-#endif
-};
-	struct KBDvecs {
-		int (*midivec) ();
-		int (*vkbderr) ();
-		int (*vmiderr) ();
-		int (*statvec) ();
-		int (*mousevec) ();
-		int (*clockvec) ();
-		int (*joyvec) ();
-		int (*midisys) ();
-		int (*ikbdsys) ();
-	};
-	struct Param {
-		char topmode;
-		char buttons;
-		char xparam;
-		char yparam;
-		int xmax,ymax;
-		int xinitial,yinitial;
-	};
-	struct KBDvecs *kbdvecs;
-	struct Param *paramp;
-	char kbdcmds[25];
-
-st520move(row, col)
-{
-        ttputc(ESC);
-        ttputc('Y');
-        ttputc(row+BIAS);
-        ttputc(col+BIAS);
-}
-
-st520eeol()
-{
-        ttputc(ESC);
-        ttputc('K');
-}
-
-st520eeop()
-{
-
-#if	COLOR
-		st520fcol(gfcolor);
-		st520bcol(gbcolor);
-#endif
-        ttputc(ESC);
-        ttputc('J');
-}
-
-st520rev(status)	/* set the reverse video state */
-
-int status;	/* TRUE = reverse video, FALSE = normal video */
-
-{
-
-	if(status) {
-		ttputc(ESC);
-		ttputc('p');
-	}
-	else {
-		ttputc(ESC);
-		ttputc('q');
-	}
-}
-
-#if	COLOR
-st520fcol(color)
-int color;	
-{
-		if(color == cfcolor || !STncolors)
-			return;
-		else {
-
-			ttputc(ESC);
-			ttputc('b');
-			ttputc(color & 0x0f);
-			cfcolor = color;
-		}
-}
-
-st520bcol(color)
-int color;
-{
-		if(color == cbcolor || !STncolors)
-			return;
-		else {
-			ttputc(ESC);
-			ttputc('c');
-			ttputc(color & 0x0f);
-			cbcolor = color;
-		}
-
-}
-#endif
-
-st520beep()
-{
-#ifdef	BEL
-        ttputc(BEL);
-        ttflush();
-#endif
-}
-
-st520open()
-{
-	int i,j,k;
-	long phys, log;	/* screen bases */
-	
-/* IMPORTANT: it is ABSOLUTELY necessary that the default resolution be the
- *	largest possible so that display will allocate (malloc) the maximum
- *	size for the VIDEO arrray
- */
-	STrez = Getrez();
-	switch(STrez) {
-		case 0: /* low res 25x40 16 colors */
-			phys = Physbase();
-			log  = Logbase();
-			Setscreen(log, phys, 1);
-			STrez = 1;
-			/* fall thru to med res */
-
-		case 1: /* med res 25x80 4 colors */
-			term.t_nrow = 25 - 1;
-			term.t_ncol  = 80;
-			grez = 1;
-#if	COLOR
-			STncolors = 4;
-			for(i=0;i<8;i++) {
-				oldpal[i] = Setcolor(i,newpal[i]);
-			}
-#endif
-			break;
-		case 2: /* high res 25x80 no colors */
-			term.t_nrow  = 40 - 1;
-			term.t_ncol  = 80;
-			grez = 2;
-			make_8x10(); /* create a smaller font */
-			set_40();    /* and go to 40 line mode */
-#if	COLOR
-			STncolors = 0;
-#endif
-			break;
-	}
-
-	revexist = TRUE;
-	eolexist = TRUE;
-	paramp = (struct Param *)malloc(sizeof(struct Param));
-	kbdvecs = (struct KBDvecs *)Kbdvbase();
-	paramp -> topmode = 0;
-	paramp -> buttons = 4;
-	paramp -> xparam = 8;
-	paramp -> yparam = 10;
-	paramp -> xmax = 79;
-	paramp -> ymax = 23;
-	paramp -> xinitial = 0;
-	paramp -> yinitial = 0;
-	Initmous(1,paramp,kbdvecs -> mousevec);
-
-	i = 0;
-	kbdcmds[i++] = 0x0a;	/*set mouse keycode mode */
-	kbdcmds[i++] = 0x08;
-	kbdcmds[i++] = 0x0a;
-	Ikbdws(i-1,&kbdcmds[0]);
-	Cursconf(1,0);
-	Cursconf(3,0);
-	Cconout(27);Cconout('E');
-        ttopen();
-}
-
-st520close()
-
-{
-	int i,j,k;
-
-	i = 0;
-	kbdcmds[i++] = 0x80;	/*reset mouse keycode mode */
-	kbdcmds[i++] = 0x01;
-	Ikbdws(i-1,&kbdcmds[0]);
-	if(grez == 2 && STrez == 2) /* b/w monitor in 40 row mode */
-		restore();
-
-#if		COLOR
-	for(i=0;i<STncolors;i++)
-		Setcolor(i,oldpal[i]);
-#endif
-	Cconout(27);Cconout('E');
-	paramp -> buttons = 0;
-	Initmous(2,paramp,kbdvecs -> mousevec);
-	i = 0;
-	kbdcmds[i++] = 0x80;	/*reset the keyboard*/
-	kbdcmds[i++] = 0x01;
-	Ikbdws(i-1,&kbdcmds[0]);
-	Cursconf(1,0);
-	ttclose();
-}
-st520kopen()
-{
-
-}
-st520kclose()
-{
-
-}
-
-st520chgrez(nurez)
-int nurez;
-{
-	int ierr, i, j ,k;
-	long phys, log;	/* screen bases */
-	char dum[80]; /* for debugging only */
-		
-	if(grez == nurez)
-		return(TRUE);
-		
-	if(STrez == 2) { /* b/w monitor-only allow hi | med rez */
-		switch(nurez) {
-			case 2: /* high res */
-				term.t_nrow  = 40 - 1;
-				term.t_ncol  = 80;
-				make_8x10(); /* create a smaller font */
-				set_40();    /* and go to 40 line mode */
-				grez = 2;
-				sgarbf = TRUE;
-				onlywind(1,1);
-				break;
-			case 1: /* med res */
-				term.t_nrow  = 25 - 1;
-				term.t_ncol  = 80;
-				restore();
-				grez = 1;
-				sgarbf = TRUE;
-				onlywind(1,1);
-				break;
-			default:
-				mlwrite("Invalid resolution");
-				return(FALSE);
-				break;
-		}
-	}
-	else { /* color monitor-only allow low | medium resolution */
-		phys = Physbase();
-		log  = Logbase();
-		switch(nurez) {
-			case 1:
-				term.t_nrow  = 25 - 1;
-				term.t_ncol  = 80;
-				Setscreen(log, phys, 1);
-				STncolors = 4;
-				grez = 1;
-				sgarbf = TRUE;
-				onlywind(1,1);
-				break;
-			case 0:
-				term.t_nrow  = 25 - 1;
-				term.t_ncol  = 40;
-				Setscreen(log, phys, 0);
-				STncolors = 8;
-				grez = 0;
-				sgarbf = TRUE;
-				onlywind(1,1);
-				break;
-			default:
-				mlwrite("%Invalid resolution");
-				return(FALSE);
-				break;
-		}
-	}
-}			
-
-STcurblink(onoff)
-int onoff;
-{
-	if(onoff)
-		Cursconf(2,0);
-	else
-		Cursconf(3,0);
-}
-
-
-char parm_save[28];
-long fnt_8x10[640];
-
-make_8x10()
-{
-	int i,j,k;
-	long savea23[2];
-	
-	for(i=0;i<640;i++)
-		fnt_8x10[i] = 0;
-		
-	asm {
-	movem.l	A2-A3,savea23(A6)
-	
-	dc.w	LINEA_INIT		;A1 -> array of font headers
-
-	lea	parm_save(A4),A2	;A2 -> parameters savearea
-	move.l	V_OFF_AD(A0),(A2)+
-	move.l	V_FNT_AD(A0),(A2)+
-	move.w	V_CEL_HT(A0),(A2)+
-	move.w	V_CEL_MY(A0),(A2)+
-	move.w	V_CEL_WR(A0),(A2)+
-
-
-	move.l	04(A1),A1		; A1 -> 8x8 font header
-	move.l	76(A1),A2		; A2 -> 8x8 font data
-	lea	fnt_8x10+0x100(A4),A3	; A3 -> 2nd line of font buffer
-	move.w	#0x200-1,D0		; D0 <- longword counter for font xfer
-
-fnt_loop:
-
-	move.l	(A2)+,(A3)+
-	dbf	D0,fnt_loop
-		
-	movem.l	savea23(A6),A2-A3
-	}
-	
-}
-
-set_40()
-{
-	long	savea23[2];
-	
-	asm {
-	
-;
-;  use the 8x10 character set: 40 line mode
-;
-
-	movem.l	A2-A3,savea23(A6)
-	
-	dc.w	LINEA_INIT
-
-	move.l	04(A1),A1		; A1 -> 8x8 font header
-	move.l	72(A1),V_OFF_AD(A0)	; v_off_ad <- 8x8  offset table addr
-	lea	fnt_8x10(A4),A2
-	move.l	A2,V_FNT_AD(A0)		; v_fnt_ad <- 8x10 font data addr
-
-	move.w	#10,V_CEL_HT(A0)	; v_cel_ht <- 10   8x10 cell height
-	move.w	#39,V_CEL_MY(A0)	; v_cel_my <- 39   maximum cell "Y"
-	move.w	#800,V_CEL_WR(A0)	; v_cel_wr <- 800  offset to cell Y+1
-
-	movem.l savea23,A2-A3
-	}
-}
-
-set_20()
-{
-	long	savea23[2];
-
-	asm {
-		
-;
-;  use the 8x10 character set: 20 line mode
-;
-
-	movem.l	A2-A3,savea23(A6)
-	
-	dc.w	LINEA_INIT		; A0 -> line A variables
-
-	move.l	04(A1),A1		; A1 -> 8x8 font header
-	move.l	72(A1),V_OFF_AD(A0)	; v_off_ad <- 8x8  offset table addr
-	lea	fnt_8x10(A4),A2
-	move.l	A2,V_FNT_AD(A0)		; v_fnt_ad <- 8x10 font data addr
-
-	move.w	#10,V_CEL_HT(A0)	; v_cel_ht <- 10   8x10 cell height
-	move.w	#19,V_CEL_MY(A0)	; v_cel_my <- 19   maximum cell "Y"
-	move.w	#1600,V_CEL_WR(A0)	; v_cel_wr <- 800  offset to cell Y+1
-	
-	movem.l	savea23,A2-A3
-	}
-}
-
-
-restore()
-{
-	long savea23[2];
-	
-	asm {
-	
-;  return what was saved in parameter save zone	
-
-	movem.l	A2-A3,savea23(A6)
-
-	dc.w	LINEA_INIT		; a0 -> line A variables
-
-	lea	parm_save(A4),A2	; a2 -> parameter save area
-	move.l	(A2)+,V_OFF_AD(A0)
-	move.l	(A2)+,V_FNT_AD(A0)
-	move.w	(A2)+,V_CEL_HT(A0)
-	move.w	(A2)+,V_CEL_MY(A0)
-	move.w	(A2)+,V_CEL_WR(A0)
-	
-	movem.l	savea23(A6),A2-A3
-	}          
-}
-GetCurStat(onoff)
-int	onoff;
-{
-	long savea23[2];
-
-	asm {
-	movem.l	A2-A3,savea23(A6)
-
-	dc.w	LINEA_INIT		; a0 -> line A variables
-	move.w	V_DISAB(A0),onoff(A6)	; 0 = cursor visible
-	moveq	#0,D0
-	move.w	V_DISAB(A0),D0	
-	movem.l	savea23(A6),A2-A3
-	}          
-}
-#else
-#if	ATARI & ST520 & LATTICE
-
-/*
-	These routines provide support for the ATARI 1040ST using
-the LATTICE compiler using the virtual VT52 Emulator
+	These routines provide support for the ATARI 1040ST and 520ST
+using the virtual VT52 Emulator
 
 */
 
-#define NROW    40                      /* Screen size.                 */
-#define NCOL    80                      /* Edit if you want to.         */
-#define	MARGIN	8			/* size of minimim margin and	*/
-#define	SCRSIZ	64			/* scroll size for extended lines */
-#define	NPAUSE	300			/* # times thru update to pause */
-#define BIAS    0x20                    /* Origin 0 coordinate bias.    */
-#define ESC     0x1B                    /* ESC character.               */
-#define BEL     0x07                    /* ASCII bell character         */
+#include	<osbind.h>
+#include	<aline.h>
+#include	<linea.h>
+
+#define NROW	50	/* Screen size. 		*/
+#define NCOL	80	/* Edit if you want to. 	*/
+#define	MARGIN	8	/* size of minimim margin and	*/
+#define	SCRSIZ	64	/* scroll size for extended lines */
+#define	NPAUSE	300	/* # times thru update to pause */
+#define BIAS	0x20	/* Origin 0 coordinate bias.	*/
+#define ESC	0x1B	/* ESC character.		*/
+#define SCRFONT 2	/* index of 8x16 monochrome system default font */
+#define DENSIZE	50	/* # of lines in a dense screen	*/
 
 /****	ST Internals definitions		*****/
 
@@ -548,21 +66,11 @@ the LATTICE compiler using the virtual VT52 Emulator
 
 #define	CON		2	/* CON: Keyboard and screen device */
 
-/*	LINE A variables	*/
-
-#define LINEA_INIT 0xA000
-#define V_CEL_WR   -0x28
-#define V_CEL_MY   -0x2a
-#define V_CEL_HT   -0x2e
-#define V_FNT_AD   -0x16
-#define V_OFF_AD   -0x0a
-#define V_DISAB    -346
-
 /*	Palette color definitions	*/
 
 #define	LOWPAL	"000700070770007707077777"
 #define	MEDPAL	"000700007777"
-#define	HIGHPAL	"000111"
+#define	HIGHPAL	"111000"
 
 /*	ST Global definitions		*/
 
@@ -594,8 +102,22 @@ int currez;			/* current screen resolution */
 char resname[][8] = {		/* screen resolution names */
 	"LOW", "MEDIUM", "HIGH", "DENSE"
 };
-short spalette[16];			/* original color palette settings */
-short palette[16];			/* current palette settings */
+short spalette[16];		/* original color palette settings */
+short palette[16];		/* current palette settings */
+
+LINEA *aline;	/* Pointer to line a parameter block returned by init */
+
+NLINEA *naline;	/* Pointer to line a parameters at negative offsets  */
+
+FONT  **fonts;	/* Array of pointers to the three system font headers */
+		/* returned by init (in register A1)                  */
+
+WORD  (**foncs)();    /* Array of pointers to the 15 line a functions      */
+                     /* returned by init (in register A2)                 */
+                     /* only valid in ROM'ed TOS                          */
+
+FONT *system_font;	/* pointer to default system font */
+FONT *small_font;	/* pointer to small font */
 
 extern  int     ttopen();               /* Forward references.          */
 extern  int     ttgetc();
@@ -651,6 +173,54 @@ TERM    term    = {
 	&stbcol
 #endif
 };
+
+void init_aline()
+{
+       linea0();
+       aline = (LINEA *)(la_init.li_a0);
+       fonts = (FONT **)(la_init.li_a1);
+       foncs = la_init.li_a2;
+       naline = ((NLINEA *)aline) - 1;
+}
+
+init()
+{
+       init_aline();
+       system_font = fonts[SCRFONT];        /* save it */
+	small_font = fonts[1];
+}
+
+
+switch_font(fp)
+
+FONT *fp;
+
+{
+       /* See aline.h for description of fields */
+	/* these definitions are temporary...too many cooks!!! */
+#undef	V_CEL_HT
+#undef	V_CEL_WR
+#undef	V_CEL_MY
+#undef	V_CEL_MX
+#undef	V_FNT_ST
+#undef	V_FNT_ND
+#undef	V_FNT_AD
+#undef	V_FNT_WR
+#undef	V_OFF_AD
+#undef	VWRAP
+#undef	V_Y_MAX
+#undef	V_X_MAX
+
+       naline->V_CEL_HT = fp->form_height;
+       naline->V_CEL_WR = aline->VWRAP * fp->form_height;
+       naline->V_CEL_MY = (naline->V_Y_MAX / fp->form_height) - 1;
+       naline->V_CEL_MX = (naline->V_X_MAX / fp->max_cell_width) - 1;
+       naline->V_FNT_WR = fp->form_width;
+       naline->V_FNT_ST = fp->first_ade;
+       naline->V_FNT_ND = fp->last_ade;
+       naline->V_OFF_AD = fp->off_table;
+       naline->V_FNT_AD =  fp->dat_table;
+}
 
 stmove(row, col)
 {
@@ -727,10 +297,26 @@ int color;	/* color to set background to */
 }
 #endif
 
+static char beep[] = {
+	0x00, 0x00,
+	0x01, 0x01,
+	0x02, 0x01,
+	0x03, 0x01,
+	0x04, 0x02,
+	0x05, 0x01,
+	0x07, 0x38,
+	0x08, 0x10,
+	0x09, 0x10,
+	0x0A, 0x10,
+	0x0B, 0x00,
+	0x0C, 0x30,
+	0x0D, 0x03,
+	0xFF, 0x00
+};
+
 stbeep()
 {
-        stputc(BEL);
-        ttflush();
+	Dosound(beep);
 }
 
 domouse()	/* mouse interupt handler */
@@ -765,6 +351,7 @@ stopen()	/* open the screen */
 
         ttopen();
 	eolexist = TRUE;
+	init();
 
 	/* switch to a steady cursor */
 	xbios(CURSCONF, 3);
@@ -790,7 +377,7 @@ stopen()	/* open the screen */
 			strcpy(palstr, MEDPAL);
 			break;
 
-		case 2: term.t_mrow = 40 - 1;
+		case 2: term.t_mrow = DENSIZE - 1;
 			term.t_nrow = 25 - 1;
 			strcpy(palstr, HIGHPAL);
 	}
@@ -826,6 +413,8 @@ stclose()
 	xbios(CURSCONF, 2);
 
 	/* restore the original screen resolution */
+	if (currez == 3)
+		switch_font(system_font);
 	strez(resname[initrez]);
 
 	/* restore the original palette settings */
@@ -870,27 +459,40 @@ char *pstr;	/* palette string */
 stgetc()	/* get a char from the keyboard */
 
 {
-	int rval;		/* return value from BIOS call */
+	register long rval;	/* return value from BIOS call */
 	static int funkey = 0;	/* held fuction key scan code */
+	static long sh;		/* shift/alt key on held function? */
+	long bios();
 
 	/* if there is a pending function key, return it */
 	if (funkey) {
+		if (sh) {	/* alt or cntrl */
+			if (funkey >= 0x3B && funkey <= 0x44) {
+				rval = funkey + '^' - ';';
+				if (sh & 0x08)	/* alt */
+					rval += 10;
+				funkey = 0;
+				return(rval & 255);
+			}
+		}
 		rval = funkey;
 		funkey = 0;
-	} else {
+	} else {
 		/* waiting... flash the cursor */
 		xbios(CURSCONF, 2);
 
 		/* get the character */
 		rval = bios(CONIN, CON);
-		if ((rval & 255) == 0) {
-			funkey = (rval >> 16) & 255;
+		sh = Getshift(-1) & 0x0cL; /* see if alt or cntrl depressed */
+		if ((rval & 255L) == 0L) {
+			funkey = (rval >> 16L) & 255;
 			rval = 0;
 		}
 
-		/* and switch to a steady cursor */
-		xbios(CURSCONF, 3);
 	}
+
+	/* and switch to a steady cursor */
+	xbios(CURSCONF, 3);
 
 	return(rval & 255);
 }
@@ -934,25 +536,25 @@ char *newrez;	/* requested resolution */
 		case 0:	/* low resolution - 16 colors */
 			newwidth(TRUE, 40);
 			strcpy(palstr, LOWPAL);
-			xbios(SETSCREEN, -1, -1, 0);
+			xbios(SETSCREEN, -1L, -1L, 0);
 			break;
 
 		case 1:	/* medium resolution - 4 colors */
 			newwidth(TRUE, 80);
 			strcpy(palstr, MEDPAL);
-			xbios(SETSCREEN, -1, -1, 1);
+			xbios(SETSCREEN, -1L, -1L, 1);
 			break;
 
 		case 2:	/* High resolution - 2 colors - 25 lines */
 			newsize(TRUE, 25);
 			strcpy(palstr, HIGHPAL);
-			/* change char set back to normal */
+			switch_font(system_font);
 			break;
 
 		case 3:	/* Dense resolution - 2 colors - 40 lines */
-			/* newsize(TRUE, 40); */
+			newsize(TRUE, DENSIZE);
 			strcpy(palstr, HIGHPAL);
-			/*change char set size */
+			switch_font(small_font);
 			break;
 	}
 
@@ -969,6 +571,7 @@ char *newrez;	/* requested resolution */
 	return(TRUE);
 }
 
+#if	LATTICE
 system(cmd)	/* call the system to execute a new program */
 
 char *cmd;	/* command to execute */
@@ -995,6 +598,7 @@ char *cmd;	/* command to execute */
 				(char *)tail,
 				(char *)NULL));
 }
+#endif
 
 #if	TYPEAH
 typahead()
@@ -1028,5 +632,3 @@ sthello()
 {
 }
 #endif
-#endif
-

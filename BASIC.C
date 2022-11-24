@@ -5,19 +5,19 @@
  * functions that adjust the top line in the window and invalidate the
  * framing, are hard.
  */
-#include        <stdio.h>
+#include	<stdio.h>
 #include	"estruct.h"
-#include        "edef.h"
+#include	"edef.h"
+
+#define OVERLAP 2	/* overlap at page up/down (like ITS EMACS) */
 
 /*
- * Move the cursor to the
- * beginning of the current line.
- * Trivial.
+ * Move the cursor to the beginning of the current line. Trivial.
  */
 gotobol(f, n)
 {
-        curwp->w_doto  = 0;
-        return (TRUE);
+	curwp->w_doto  = 0;
+	return (TRUE);
 }
 
 /*
@@ -27,23 +27,23 @@ gotobol(f, n)
  * line pointer for dot changes.
  */
 backchar(f, n)
-register int    n;
+register int	n;
 {
-        register LINE   *lp;
+	register LINE	*lp;
 
-        if (n < 0)
-                return (forwchar(f, -n));
-        while (n--) {
-                if (curwp->w_doto == 0) {
-                        if ((lp=lback(curwp->w_dotp)) == curbp->b_linep)
-                                return (FALSE);
-                        curwp->w_dotp  = lp;
-                        curwp->w_doto  = llength(lp);
-                        curwp->w_flag |= WFMOVE;
-                } else
-                        curwp->w_doto--;
-        }
-        return (TRUE);
+	if (n < 0)
+		return (forwchar(f, -n));
+	while (n--) {
+		if (curwp->w_doto == 0) {
+			if ((lp=lback(curwp->w_dotp)) == curbp->b_linep)
+				return (FALSE);
+			curwp->w_dotp  = lp;
+			curwp->w_doto  = llength(lp);
+			curwp->w_flag |= WFMOVE;
+		} else
+			curwp->w_doto--;
+	}
+	return (TRUE);
 }
 
 /*
@@ -51,8 +51,8 @@ register int    n;
  */
 gotoeol(f, n)
 {
-        curwp->w_doto  = llength(curwp->w_dotp);
-        return (TRUE);
+	curwp->w_doto  = llength(curwp->w_dotp);
+	return (TRUE);
 }
 
 /*
@@ -62,26 +62,26 @@ gotoeol(f, n)
  * buffer. Set the flag if the line pointer for dot changes.
  */
 forwchar(f, n)
-register int    n;
+register int	n;
 {
-        if (n < 0)
-                return (backchar(f, -n));
-        while (n--) {
-                if (curwp->w_doto == llength(curwp->w_dotp)) {
-                        if (curwp->w_dotp == curbp->b_linep)
-                                return (FALSE);
-                        curwp->w_dotp  = lforw(curwp->w_dotp);
-                        curwp->w_doto  = 0;
-                        curwp->w_flag |= WFMOVE;
-                } else
-                        curwp->w_doto++;
-        }
-        return (TRUE);
+	if (n < 0)
+		return (backchar(f, -n));
+	while (n--) {
+		if (curwp->w_doto == llength(curwp->w_dotp)) {
+			if (curwp->w_dotp == curbp->b_linep)
+				return (FALSE);
+			curwp->w_dotp  = lforw(curwp->w_dotp);
+			curwp->w_doto  = 0;
+			curwp->w_flag |= WFMOVE;
+		} else
+			curwp->w_doto++;
+	}
+	return (TRUE);
 }
 
 gotoline(f, n)		/* move to a particular line.
 			   argument (n) must be a positive integer for
-			   this to actually do anything		*/
+			   this to actually do anything 	*/
 
 {
 	register int status;	/* status return */
@@ -89,7 +89,7 @@ gotoline(f, n)		/* move to a particular line.
 
 	/* get an argument if one doesnt exist */
 	if (f == FALSE) {
-		if ((status = mlreply("Line to GOTO: ", arg, "")) != TRUE) {
+		if ((status = mlreply("Line to GOTO: ", arg, NSTRING)) != TRUE) {
 			mlwrite("[Aborted]");
 			return(status);
 		}
@@ -100,8 +100,8 @@ gotoline(f, n)		/* move to a particular line.
 		return(FALSE);
 
 	/* first, we go to the start of the buffer */
-        curwp->w_dotp  = lforw(curbp->b_linep);
-        curwp->w_doto  = 0;
+	curwp->w_dotp  = lforw(curbp->b_linep);
+	curwp->w_doto  = 0;
 	return(forwline(f, n-1));
 }
 
@@ -112,10 +112,10 @@ gotoline(f, n)		/* move to a particular line.
  */
 gotobob(f, n)
 {
-        curwp->w_dotp  = lforw(curbp->b_linep);
-        curwp->w_doto  = 0;
-        curwp->w_flag |= WFHARD;
-        return (TRUE);
+	curwp->w_dotp  = lforw(curbp->b_linep);
+	curwp->w_doto  = 0;
+	curwp->w_flag |= WFHARD;
+	return (TRUE);
 }
 
 /*
@@ -125,10 +125,10 @@ gotobob(f, n)
  */
 gotoeob(f, n)
 {
-        curwp->w_dotp  = curbp->b_linep;
-        curwp->w_doto  = 0;
-        curwp->w_flag |= WFHARD;
-        return (TRUE);
+	curwp->w_dotp  = curbp->b_linep;
+	curwp->w_doto  = 0;
+	curwp->w_flag |= WFHARD;
+	return (TRUE);
 }
 
 /*
@@ -139,10 +139,10 @@ gotoeob(f, n)
  */
 forwline(f, n)
 {
-        register LINE   *dlp;
+	register LINE	*dlp;
 
-        if (n < 0)
-                return (backline(f, -n));
+	if (n < 0)
+		return (backline(f, -n));
 
 	/* if we are on the last line as we start....fail the command */
 	if (curwp->w_dotp == curbp->b_linep)
@@ -150,22 +150,22 @@ forwline(f, n)
 
 	/* if the last command was not note a line move,
 	   reset the goal column */
-        if ((lastflag&CFCPCN) == 0)
-                curgoal = getccol(FALSE);
+	if ((lastflag&CFCPCN) == 0)
+		curgoal = getccol(FALSE);
 
 	/* flag this command as a line move */
-        thisflag |= CFCPCN;
+	thisflag |= CFCPCN;
 
 	/* and move the point down */
-        dlp = curwp->w_dotp;
-        while (n-- && dlp!=curbp->b_linep)
-                dlp = lforw(dlp);
+	dlp = curwp->w_dotp;
+	while (n-- && dlp!=curbp->b_linep)
+		dlp = lforw(dlp);
 
 	/* reseting the current position */
-        curwp->w_dotp  = dlp;
-        curwp->w_doto  = getgoal(dlp);
-        curwp->w_flag |= WFMOVE;
-        return (TRUE);
+	curwp->w_dotp  = dlp;
+	curwp->w_doto  = getgoal(dlp);
+	curwp->w_flag |= WFMOVE;
+	return (TRUE);
 }
 
 /*
@@ -176,34 +176,34 @@ forwline(f, n)
  */
 backline(f, n)
 {
-        register LINE   *dlp;
+	register LINE	*dlp;
 
-        if (n < 0)
-                return (forwline(f, -n));
+	if (n < 0)
+		return (forwline(f, -n));
 
 
-	/* if we are on the last line as we start....fail the command */
+	/* if we are on the first line as we start....fail the command */
 	if (lback(curwp->w_dotp) == curbp->b_linep)
 		return(FALSE);
 
 	/* if the last command was not note a line move,
 	   reset the goal column */
-        if ((lastflag&CFCPCN) == 0)
-                curgoal = getccol(FALSE);
+	if ((lastflag&CFCPCN) == 0)
+		curgoal = getccol(FALSE);
 
 	/* flag this command as a line move */
-        thisflag |= CFCPCN;
+	thisflag |= CFCPCN;
 
 	/* and move the point up */
-        dlp = curwp->w_dotp;
-        while (n-- && lback(dlp)!=curbp->b_linep)
-                dlp = lback(dlp);
+	dlp = curwp->w_dotp;
+	while (n-- && lback(dlp)!=curbp->b_linep)
+		dlp = lback(dlp);
 
-	/* reseting the current position */
-        curwp->w_dotp  = dlp;
-        curwp->w_doto  = getgoal(dlp);
-        curwp->w_flag |= WFMOVE;
-        return (TRUE);
+	/* reset the current position */
+	curwp->w_dotp  = dlp;
+	curwp->w_doto  = getgoal(dlp);
+	curwp->w_flag |= WFMOVE;
+	return (TRUE);
 }
 
 #if	WORDPRO
@@ -284,7 +284,7 @@ int f, n;	/* default Flag & Numeric argument */
 		while (suc && !inword()) {
 			suc = backchar(FALSE, 1);
 		}
-		curwp->w_doto = llength(curwp->w_dotp);	/* and to the EOL */
+		curwp->w_doto = llength(curwp->w_dotp); /* and to the EOL */
 	}
 	curwp->w_flag |= WFMOVE;	/* force screen update */
 	return(TRUE);
@@ -294,32 +294,32 @@ int f, n;	/* default Flag & Numeric argument */
 /*
  * This routine, given a pointer to a LINE, and the current cursor goal
  * column, return the best choice for the offset. The offset is returned.
- * Used by "C-N" and "C-P".
+ * Used by forw/backline and forw/backpage.
  */
 getgoal(dlp)
-register LINE   *dlp;
+register LINE	*dlp;
 {
-        register int    c;
-        register int    col;
-        register int    newcol;
-        register int    dbo;
+	register int	c;
+	register int	col;
+	register int	newcol;
+	register int	dbo;
 
-        col = 0;
-        dbo = 0;
-        while (dbo != llength(dlp)) {
-                c = lgetc(dlp, dbo);
-                newcol = col;
-                if (c == '\t')
-                        newcol |= 0x07;
-                else if (c<0x20 || c==0x7F)
-                        ++newcol;
-                ++newcol;
-                if (newcol > curgoal)
-                        break;
-                col = newcol;
-                ++dbo;
-        }
-        return (dbo);
+	col = 0;
+	dbo = 0;
+	while (dbo != llength(dlp)) {
+		c = lgetc(dlp, dbo);
+		newcol = col;
+		if (c == '\t')
+			newcol |= 0x07;
+		else if (c<0x20 || c==0x7F)
+			++newcol;
+		++newcol;
+		if (newcol > curgoal)
+			break;
+		col = newcol;
+		++dbo;
+	}
+	return (dbo);
 }
 
 /*
@@ -390,10 +390,21 @@ register int    n;
  */
 setmark(f, n)
 {
-        curwp->w_markp = curwp->w_dotp;
-        curwp->w_marko = curwp->w_doto;
-        mlwrite("[Mark set]");
-        return (TRUE);
+	curwp->w_markp = curwp->w_dotp;
+	curwp->w_marko = curwp->w_doto;
+	mlwrite("[Mark set]");
+	return (TRUE);
+}
+
+/*
+ * clear the mark in the current window. Trivial.
+ */
+resetmark(f, n)
+{
+	curwp->w_markp = NULL;
+	curwp->w_marko = 0;
+	mlwrite("[Mark cleared]");
+	return TRUE;
 }
 
 /*
@@ -404,19 +415,19 @@ setmark(f, n)
  */
 swapmark(f, n)
 {
-        register LINE   *odotp;
-        register int    odoto;
+	register LINE	*odotp;
+	register int	odoto;
 
-        if (curwp->w_markp == NULL) {
-                mlwrite("No mark in this window");
-                return (FALSE);
-        }
-        odotp = curwp->w_dotp;
-        odoto = curwp->w_doto;
-        curwp->w_dotp  = curwp->w_markp;
-        curwp->w_doto  = curwp->w_marko;
-        curwp->w_markp = odotp;
-        curwp->w_marko = odoto;
-        curwp->w_flag |= WFMOVE;
-        return (TRUE);
+	if (curwp->w_markp == NULL) {
+		mlwrite("No mark in this window");
+		return (FALSE);
+	}
+	odotp = curwp->w_dotp;
+	odoto = curwp->w_doto;
+	curwp->w_dotp  = curwp->w_markp;
+	curwp->w_doto  = curwp->w_marko;
+	curwp->w_markp = odotp;
+	curwp->w_marko = odoto;
+	curwp->w_flag |= WFMOVE;
+	return (TRUE);
 }

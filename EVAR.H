@@ -15,7 +15,7 @@ typedef struct UVAR {
 
 #define	MAXVARS		255
 
-UVAR uv[MAXVARS];	/* user variables */
+UVAR uv[MAXVARS + 1];	/* user variables */
 
 /*	list of recognized environment variables	*/
 
@@ -55,11 +55,13 @@ char *envars[] = {
 	"pending",		/* type ahead pending flag */
 	"lwidth",		/* width of current line */
 	"line",			/* text of current line */
+	"gflags",		/* global internal emacs flags */
+	"rval",			/* child process return value */
 };
 
 #define	NEVARS	sizeof(envars) / sizeof(char *)
 
-/* 	and its preprocesor definitions		*/
+/* 	and their preprocessor definitions		*/
 
 #define	EVFILLCOL	0
 #define	EVPAGELEN	1
@@ -96,6 +98,8 @@ char *envars[] = {
 #define	EVPENDING	32
 #define	EVLWIDTH	33
 #define	EVLINE		34
+#define	EVGFLAGS	35
+#define	EVRVAL		36
 
 /*	list of recognized user functions	*/
 
@@ -141,7 +145,14 @@ UFUNC funcs[] = {
 	"abs", MONAMIC,		/* absolute value of a number */
 	"sin", DYNAMIC,		/* find the index of one string in another */
 	"env", MONAMIC,		/* retrieve a system environment var */
-	"bin", MONAMIC,		/* loopup what function name is bound to a key */
+	"bin", MONAMIC,		/* lookup what function name is bound to a key */
+	"exi", MONAMIC,		/* check if a file exists */
+	"fin", MONAMIC,		/* look for a file on the path... */
+ 	"ban", DYNAMIC,		/* bitwise and   9-10-87  jwm */
+ 	"bor", DYNAMIC,		/* bitwise or    9-10-87  jwm */
+ 	"bxo", DYNAMIC,		/* bitwise xor	 9-10-87  jwm */
+	"bno", MONAMIC,		/* bitwise not */
+	"xla", TRINAMIC,	/* XLATE character string translation */
 };
 
 #define	NFUNCS	sizeof(funcs) / sizeof(UFUNC)
@@ -180,3 +191,10 @@ UFUNC funcs[] = {
 #define	UFSINDEX	29
 #define	UFENV		30
 #define	UFBIND		31
+#define	UFEXIST		32
+#define	UFFIND		33
+#define UFBAND		34
+#define UFBOR		35
+#define UFBXOR		36
+#define	UFBNOT		37
+#define	UFXLATE		38

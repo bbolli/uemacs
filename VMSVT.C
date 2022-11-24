@@ -361,7 +361,7 @@ vmsopen()
 	end_reverse = vmsgetstr(SMG$K_END_REVERSE);
 	revexist = begin_reverse != NULL && end_reverse != NULL;
 	erase_to_end_line = vmsgetstr(SMG$K_ERASE_TO_END_LINE);
-	eolexist = erase_whole_display != NULL;
+	eolexist = erase_to_end_line != NULL;
 	erase_whole_display = vmsgetstr(SMG$K_ERASE_WHOLE_DISPLAY);
 
 	/* Set resolution */

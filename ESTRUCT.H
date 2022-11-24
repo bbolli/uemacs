@@ -7,7 +7,7 @@
 */
 
 #ifdef	LATTICE
-#undef	LATTICE		/* don't use their definitions...use ours	*/
+#undef	LATTICE 	/* don't use their definitions...use ours	*/
 #endif
 #ifdef	MSDOS
 #undef	MSDOS
@@ -21,6 +21,9 @@
 #ifdef	EGA
 #undef	EGA
 #endif
+#ifdef	CTRLZ
+#undef	CTRLZ
+#endif
 
 /*	Program Identification.....
 
@@ -30,81 +33,87 @@
 	product. Macros can query this via the $progname variable
 */
 
-#define	PROGNAME	"MicroEMACS"
-#define	VERSION		"3.9"
+#define PROGNAME	"MicroEMACS"
+#define VERSION 	"3.9e"
 
 /*	Machine/OS definitions			*/
 
-#define AMIGA   0                       /* AmigaDOS			*/
-#define ST520   0                       /* ST520, TOS                   */
-#define MSDOS   1                       /* MS-DOS                       */
-#define V7      0                       /* V7 UNIX or Coherent or BSD4.2*/
-#define	BSD	0			/* UNIX BSD 4.2	and ULTRIX	*/
-#define	USG	0			/* UNIX system V		*/
-#define VMS     0                       /* VAX/VMS                      */
-#define CPM     0                       /* CP/M-86                      */
-#define	FINDER	0			/* Macintosh OS			*/
+#define AMIGA	0			/* AmigaDOS			*/
+#define ST520	0			/* ST520, TOS			*/
+#define MSDOS	1			/* MS-DOS			*/
+#define V7	0			/* V7 UNIX or Coherent or BSD4.2*/
+#define BSD	0			/* UNIX BSD 4.2 and ULTRIX	*/
+#define USG	0			/* UNIX system V		*/
+#define VMS	0			/* VAX/VMS			*/
+#define CPM	0			/* CP/M-86			*/
+#define FINDER	0			/* Macintosh OS 		*/
 
 /*	Compiler definitions			*/
-#define	UNIX	0	/* a random UNIX compiler */
-#define MWC86   0	/* marc williams compiler */
-#define	LATTICE	0	/* Lattice 2.14 thruough 3.0 compilers */
-#define	AZTEC	1	/* Aztec C 3.20e */
-#define	MSC	0	/* MicroSoft C compile version 3 & 4 */
-#define	TURBO	0	/* Turbo C/MSDOS */
+#define UNIX	0	/* a random UNIX compiler */
+#define MWC	0	/* Marc Williams C */
+#define LATTICE 0	/* Lattice 2.14 thruough 3.0 compilers */
+#define AZTEC	0	/* Aztec C 3.20e */
+#define MSC	0	/* MicroSoft C compile version 3 & 4 */
+#define TURBO	1	/* Turbo C/MSDOS */
 
 /*	Debugging options	*/
-#define	RAMSIZE	0	/* dynamic RAM memory usage tracking */
-#define	RAMSHOW	0	/* auto dynamic RAM reporting */
+#define RAMSIZE 0	/* dynamic RAM memory usage tracking */
+#define RAMSHOW 0	/* auto dynamic RAM reporting */
 
-/*   Special keyboard definitions            */
+/*   Special keyboard definitions	     */
 
-#define WANGPC	0		/* WangPC - mostly escape sequences     */
+#define WANGPC	0		/* WangPC - mostly escape sequences	*/
+#define VT100	0		/* Handle VT100 style keypad.	*/
+#define SUN	0		/* Handle SUN style keyboard.	*/
 
 /*	Terminal Output definitions		*/
 
-#define ANSI    0			/* ANSI escape sequences	*/
-#define	HP150	0			/* HP150 screen driver		*/
-#define	HP110	0			/* HP110 screen driver		*/
-#define	VMSVT	0			/* various VMS terminal entries	*/
-#define VT52    0                       /* VT52 terminal (Zenith).      */
-#define VT100   0                       /* Handle VT100 style keypad.   */
-#define RAINBOW 0                       /* Use Rainbow fast video.      */
-#define TERMCAP 0                       /* Use TERMCAP                  */
-#define	IBMPC	1			/* IBM-PC CGA/MONO/EGA driver	*/
-#define	DG10	0			/* Data General system/10	*/
-#define	TIPC	0			/* TI Profesional PC driver	*/
-#define	Z309	0			/* Zenith 100 PC family	driver	*/
-#define	MAC	0			/* Macintosh			*/
-#define	ATARI	0			/* Atari 520/1040ST screen	*/
+#define ANSI	0			/* ANSI escape sequences	*/
+#define HP150	0			/* HP150 screen driver		*/
+#define HP110	0			/* HP110 screen driver		*/
+#define VMSVT	0			/* various VMS terminal entries */
+#define VT52	0			/* VT52 terminal (Zenith).	*/
+#define RAINBOW 0			/* Use Rainbow fast video.	*/
+#define TERMCAP 0			/* Use TERMCAP			*/
+#define IBMPC	1			/* IBM-PC CGA/MONO/EGA driver	*/
+#define DG10	0			/* Data General system/10	*/
+#define TIPC	0			/* TI Profesional PC driver	*/
+#define Z309	0			/* Zenith 100 PC family driver	*/
+#define MAC	0			/* Macintosh			*/
+#define ATARI	0			/* Atari 520/1040ST screen	*/
 
 /*	Configuration options	*/
 
-#define CVMVAS  1	/* arguments to page forward/back in pages	*/
-#define	CLRMSG	0	/* space clears the message line with no insert	*/
-#define	CFENCE	1	/* fench matching in CMODE			*/
-#define	TYPEAH	1	/* type ahead causes update to be skipped	*/
+#define CVMVAS	1	/* arguments to page forward/back in pages	*/
+#define NFWORD	1	/* forward word jumps to beginning of word	*/
+#define CLRMSG	0	/* space clears the message line with no insert */
+#define CFENCE	1	/* fence matching in CMODE			*/
+#define TYPEAH	1	/* type ahead causes update to be skipped	*/
 #define DEBUGM	1	/* $debug triggers macro debugging		*/
-#define	VISMAC	0	/* update display during keyboard macros	*/
-#define	CTRLZ	0	/* add a ^Z at end of files under MSDOS only	*/
+#define VISMAC	0	/* update display during keyboard macros	*/
+#define CTRLZ	0	/* add a ^Z at end of files under MSDOS only	*/
+#define ADDCR	0	/* ajout d'un CR en fin de chaque ligne (ST520) */
+#define NBRACE	0	/* new style brace matching command		*/
 
-#define	REVSTA	1	/* Status line appears in reverse video		*/
-#define	COLOR	1	/* color commands and windows			*/
+#define REVSTA	1	/* Status line appears in reverse video 	*/
+#define COLOR	1	/* color commands and windows			*/
 
-#define	FILOCK	0	/* file locking under unix BSD 4.2		*/
-#define	ISRCH	0	/* Incremental searches like ITS EMACS		*/
-#define	WORDPRO	1	/* Advanced word processing features		*/
-#define	FLABEL	0	/* function key label code [HP150]		*/
-#define	APROP	1	/* Add code for Apropos command			*/
-#define	CRYPT	1	/* file encryption enabled?			*/
-#define MAGIC	1	/* include regular expression matching?		*/
-#define	AEDIT	1	/* advanced editing options: en/detabbing	*/
-#define	PROC	1	/* named procedures				*/
+#define FILOCK	0	/* file locking under unix BSD 4.2		*/
+#define ISRCH	0	/* Incremental searches like ITS EMACS		*/
+#define WORDPRO 1	/* Advanced word processing features		*/
+#define FLABEL	0	/* function key label code [HP150]		*/
+#define APROP	1	/* Add code for Apropos command 		*/
+#define CRYPT	1	/* file encryption enabled?			*/
+#define MAGIC	1	/* include regular expression matching? 	*/
+#define AEDIT	1	/* advanced editing options: en/detabbing	*/
+#define PROC	1	/* named procedures				*/
+#define CLEAN	0	/* de-alloc memory on exit			*/
+#define CALLED	0	/* is emacs a called subroutine? or stand alone */
 
 #define ASCII	1	/* always using ASCII char sequences for now	*/
-#define EBCDIC	0	/* later IBM mainfraim versions will use EBCDIC	*/
+#define EBCDIC	0	/* later IBM mainframe versions will use EBCDIC */
 
-/*	System dependant library redefinitions, structures and includes	*/
+/*	System dependant library redefinitions, structures and includes */
 
 #if	TURBO
 #include      <dos.h>
@@ -116,47 +125,51 @@
 #endif
 
 #if	VMS
-#define	atoi	xatoi
-#define	abs	xabs
-#define	getname	xgetname
+#define atoi	xatoi
+#define abs	xabs
+#define getname xgetname
 #endif
 
 #if	LATTICE
-#define	unsigned
+#define unsigned
 #endif
 
 #if	AZTEC
 #undef	fputc
 #undef	fgetc
 #if	MSDOS
-#define	fgetc	a1getc
+#define fgetc	a1getc
+#define int86	sysint
+#define intdos(a, b)	sysint(33, a, b)
+#define inp	inportb
+#define outp	outportb
 #else
-#define	fgetc	agetc
+#define fgetc	agetc
 #endif
-#define	fputc	aputc
-#define	int86	sysint
-#define	intdos(a, b)	sysint(33, a, b)
-#define	inp	inportb
-#define	outp	outportb
+#define fputc	aputc
 
 struct XREG {
-	int ax,bx,cx,dx,si,di;
+	unsigned ax,bx,cx,dx,si,di,ds,es;
 };
 
 struct HREG {
-	char al,ah,bl,bh,cl,ch,dl,dh;
+	char al,ah,bl,bh,cl,ch,dl,dh,d1,d2,e1,e2;
 };
 
 union REGS {
 	struct XREG x;
 	struct HREG h;
 };
+
+struct SREGS {
+	unsigned cs, ss, ds, es;
+};
 #endif
 
-#if	MSDOS & MWC86
+#if	MSDOS & MWC
 #include	<dos.h>
-#define	int86(a, b, c)	intcall(b, c, a)
-#define	inp	in
+#define int86(a, b, c)	intcall(b, c, a)
+#define inp	in
 
 struct XREG {
 	int ax,bx,cx,dx,si,di,ds,es,flags;
@@ -176,9 +189,9 @@ union REGS {
 #if	MSDOS & MSC
 #include	<dos.h>
 #include	<memory.h>
-#define	peek(a,b,c,d)	movedata(a,b,FP_SEG(c),FP_OFF(c),d)
-#define	poke(a,b,c,d)	movedata(FP_SEG(c),FP_OFF(c),a,b,d)
-#define	movmem(a, b, c)		memcpy(b, a, c)
+#define peek(a,b,c,d)	movedata(a,b,FP_SEG(c),FP_OFF(c),d)
+#define poke(a,b,c,d)	movedata(FP_SEG(c),FP_OFF(c),a,b,d)
+#define movmem(a, b, c) 	memcpy(b, a, c)
 #endif
 
 #if	MSDOS & LATTICE
@@ -189,43 +202,47 @@ union REGS {
 #endif
 
 #if	VMS
-#define	unlink(a)	delete(a)
+#define unlink(a)	delete(a)
 #endif
 
 /*	define some ability flags */
 
 #if	IBMPC | Z309
-#define	MEMMAP	1
+#define MEMMAP	1
 #else
-#define	MEMMAP	0
+#define MEMMAP	0
 #endif
 
-#if	((MSDOS) & (LATTICE | AZTEC | MSC | TURBO)) | V7 | USG | BSD
-#define	ENVFUNC	1
+#if	MSDOS | V7 | USG | BSD | (ST520 & MWC)
+#define ENVFUNC 1
 #else
-#define	ENVFUNC	0
+#define ENVFUNC 0
 #endif
+
+/*	Emacs global flag bit definitions (for gflags)	*/
+
+#define GFREAD	1
 
 /*	internal constants	*/
 
-#define	NBINDS	256			/* max # of bound keys		*/
-#define NFILEN  80                      /* # of bytes, file name        */
-#define NBUFN   16                      /* # of bytes, buffer name      */
-#define NLINE   256                     /* # of bytes, input line       */
-#define	NSTRING	128			/* # of bytes, string buffers	*/
-#define NKBDM   256                     /* # of strokes, keyboard macro */
-#define NPAT    128                     /* # of bytes, pattern          */
-#define HUGE    1000                    /* Huge number                  */
-#define	NLOCKS	100			/* max # of file locks active	*/
-#define	NCOLORS	8			/* number of supported colors	*/
-#define	KBLOCK	250			/* sizeof kill buffer chunks	*/
-#define	NBLOCK	16			/* line block chunk size	*/
-#define	NVSIZE	10			/* max #chars in a var name	*/
+#define NBINDS	256			/* max # of bound keys		*/
+#define NFILEN	80			/* # of bytes, file name	*/
+#define NBUFN	16			/* # of bytes, buffer name	*/
+#define NLINE	256			/* # of bytes, input line	*/
+#define NSTRING 128			/* # of bytes, string buffers	*/
+#define NKBDM	256			/* # of strokes, keyboard macro */
+#define NPAT	128			/* # of bytes, pattern		*/
+#define HUGE	1000			/* Huge number			*/
+#define NLOCKS	100			/* max # of file locks active	*/
+#define NCOLORS 8			/* number of supported colors	*/
+#define KBLOCK	250			/* sizeof kill buffer chunks	*/
+#define NBLOCK	16			/* line block chunk size	*/
+#define NVSIZE	10			/* max #chars in a var name	*/
 
-#define CTRL    0x0100                  /* Control flag, or'ed in       */
-#define META    0x0200                  /* Meta flag, or'ed in          */
-#define CTLX    0x0400                  /* ^X flag, or'ed in            */
-#define	SPEC	0x0800			/* special key (function keys)	*/
+#define CTRL	0x0100			/* Control flag, or'ed in	*/
+#define META	0x0200			/* Meta flag, or'ed in		*/
+#define CTLX	0x0400			/* ^X flag, or'ed in		*/
+#define SPEC	0x0800			/* special key (function keys)	*/
 
 #ifdef	FALSE
 #undef	FALSE
@@ -234,77 +251,77 @@ union REGS {
 #undef	TRUE
 #endif
 
-#define FALSE   0                       /* False, no, bad, etc.         */
-#define TRUE    1                       /* True, yes, good, etc.        */
-#define ABORT   2                       /* Death, ^G, abort, etc.       */
-#define	FAILED	3			/* not-quite fatal false return	*/
+#define FALSE	0			/* False, no, bad, etc. 	*/
+#define TRUE	1			/* True, yes, good, etc.	*/
+#define ABORT	2			/* Death, ^G, abort, etc.	*/
+#define FAILED	3			/* not-quite fatal false return */
 
-#define	STOP	0			/* keyboard macro not in use	*/
-#define	PLAY	1			/*		  playing	*/
-#define	RECORD	2			/*		  recording	*/
+#define STOP	0			/* keyboard macro not in use	*/
+#define PLAY	1			/*		  playing	*/
+#define RECORD	2			/*		  recording	*/
 
 /*	Directive definitions	*/
 
-#define	DIF		0
+#define DIF		0
 #define DELSE		1
 #define DENDIF		2
 #define DGOTO		3
-#define DRETURN		4
+#define DRETURN 	4
 #define DENDM		5
 #define DWHILE		6
-#define	DENDWHILE	7
-#define	DBREAK		8
+#define DENDWHILE	7
+#define DBREAK		8
 #define DFORCE		9
 
-#define NUMDIRS		10
+#define NUMDIRS 	10
 
 /*
  * PTBEG, PTEND, FORWARD, and REVERSE are all toggle-able values for
  * the scan routines.
  */
-#define	PTBEG	0	/* Leave the point at the beginning on search	*/
-#define	PTEND	1	/* Leave the point at the end on search		*/
-#define	FORWARD	0			/* forward direction		*/
-#define REVERSE	1			/* backwards direction		*/
+#define PTBEG	0	/* Leave the point at the beginning on search	*/
+#define PTEND	1	/* Leave the point at the end on search 	*/
+#define FORWARD 0			/* forward direction		*/
+#define REVERSE 1			/* backwards direction		*/
 
-#define FIOSUC  0                       /* File I/O, success.           */
-#define FIOFNF  1                       /* File I/O, file not found.    */
-#define FIOEOF  2                       /* File I/O, end of file.       */
-#define FIOERR  3                       /* File I/O, error.             */
-#define	FIOMEM	4			/* File I/O, out of memory	*/
-#define	FIOFUN	5			/* File I/O, eod of file/bad line*/
+#define FIOSUC	0			/* File I/O, success.		*/
+#define FIOFNF	1			/* File I/O, file not found.	*/
+#define FIOEOF	2			/* File I/O, end of file.	*/
+#define FIOERR	3			/* File I/O, error.		*/
+#define FIOMEM	4			/* File I/O, out of memory	*/
+#define FIOFUN	5			/* File I/O, end of file/bad line*/
 
-#define CFCPCN  0x0001                  /* Last command was C-P, C-N    */
-#define CFKILL  0x0002                  /* Last command was a kill      */
+#define CFCPCN	0x0001			/* Last command was C-P, C-N	*/
+#define CFKILL	0x0002			/* Last command was a kill	*/
 
-#define	BELL	0x07			/* a bell character		*/
-#define	TAB	0x09			/* a tab character		*/
+#define BELL	0x07			/* a bell character		*/
+#define TAB	0x09			/* a tab character		*/
 
 #if	V7 | USG | BSD
-#define	PATHCHR	':'
+#define PATHCHR ':'
 #else
-#define	PATHCHR	';'
+#define PATHCHR ';'
 #endif
 
-#define	INTWIDTH	sizeof(int) * 3
+#define INTWIDTH	sizeof(int) * 3
 
 /*	Macro argument token types					*/
 
-#define	TKNUL	0			/* end-of-string		*/
-#define	TKARG	1			/* interactive argument		*/
-#define	TKBUF	2			/* buffer argument		*/
-#define	TKVAR	3			/* user variables		*/
-#define	TKENV	4			/* environment variables	*/
-#define	TKFUN	5			/* function....			*/
-#define	TKDIR	6			/* directive			*/
-#define	TKLBL	7			/* line label			*/
-#define	TKLIT	8			/* numeric literal		*/
-#define	TKSTR	9			/* quoted string literal	*/
-#define	TKCMD	10			/* command name			*/
+#define TKNUL	0			/* end-of-string		*/
+#define TKARG	1			/* interactive argument 	*/
+#define TKBUF	2			/* buffer argument		*/
+#define TKVAR	3			/* user variables		*/
+#define TKENV	4			/* environment variables	*/
+#define TKFUN	5			/* function.... 		*/
+#define TKDIR	6			/* directive			*/
+#define TKLBL	7			/* line label			*/
+#define TKLIT	8			/* numeric literal		*/
+#define TKSTR	9			/* quoted string literal	*/
+#define TKCMD	10			/* command name 		*/
 
 /*	Internal defined functions					*/
 
-#define	nextab(a)	(a & ~7) + 8
+#define nextab(a)	(a & ~7) + 8
 #ifdef	abs
 #undef	abs
 #endif
@@ -321,14 +338,14 @@ union REGS {
 
 #if	ASCII
 
-#define	DIFCASE		0x20
+#define DIFCASE 	0x20
 #define isletter(c)	(('a' <= c && 'z' >= c) || ('A' <= c && 'Z' >= c))
 #define islower(c)	(('a' <= c && 'z' >= c))
 #endif
 
 #if	EBCDIC
 
-#define	DIFCASE		0x40
+#define DIFCASE 	0x40
 #define isletter(c)	(('a' <= c && 'i' >= c) || ('j' <= c && 'r' >= c) || ('s' <= c && 'z' >= c) || ('A' <= c && 'I' >= c) || ('J' <= c && 'R' >= c) || ('S' <= c && 'Z' >= c))
 #define islower(c)	(('a' <= c && 'i' >= c) || ('j' <= c && 'r' >= c) || ('s' <= c && 'z' >= c))
 #endif
@@ -336,8 +353,16 @@ union REGS {
 /*	Dynamic RAM tracking and reporting redefinitions	*/
 
 #if	RAMSIZE
-#define	malloc	allocate
-#define	free	release
+#define malloc	allocate
+#define free	release
+#endif
+
+/*	De-allocate memory always on exit (if the operating system or
+	main program can not
+*/
+
+#if	CLEAN
+#define exit(a) cexit(a)
 #endif
 
 /*
@@ -349,30 +374,30 @@ union REGS {
  * the full blown redisplay is just too expensive to run for every input
  * character.
  */
-typedef struct  WINDOW {
-        struct  WINDOW *w_wndp;         /* Next window                  */
-        struct  BUFFER *w_bufp;         /* Buffer displayed in window   */
-        struct  LINE *w_linep;          /* Top line in the window       */
-        struct  LINE *w_dotp;           /* Line containing "."          */
-        short   w_doto;                 /* Byte offset for "."          */
-        struct  LINE *w_markp;          /* Line containing "mark"       */
-        short   w_marko;                /* Byte offset for "mark"       */
-        char    w_toprow;               /* Origin 0 top row of window   */
-        char    w_ntrows;               /* # of rows of text in window  */
-        char    w_force;                /* If NZ, forcing row.          */
-        char    w_flag;                 /* Flags.                       */
+typedef struct	WINDOW {
+	struct	WINDOW *w_wndp; 	/* Next window			*/
+	struct	BUFFER *w_bufp; 	/* Buffer displayed in window	*/
+	struct	LINE *w_linep;		/* Top line in the window	*/
+	struct	LINE *w_dotp;		/* Line containing "."		*/
+	short	w_doto; 		/* Byte offset for "."		*/
+	struct	LINE *w_markp;		/* Line containing "mark"	*/
+	short	w_marko;		/* Byte offset for "mark"	*/
+	char	w_toprow;		/* Origin 0 top row of window	*/
+	char	w_ntrows;		/* # of rows of text in window	*/
+	char	w_force;		/* If NZ, forcing row.		*/
+	char	w_flag; 		/* Flags.			*/
 #if	COLOR
 	char	w_fcolor;		/* current forground color	*/
 	char	w_bcolor;		/* current background color	*/
 #endif
-}       WINDOW;
+}	WINDOW;
 
-#define WFFORCE 0x01                    /* Window needs forced reframe  */
-#define WFMOVE  0x02                    /* Movement from line to line   */
-#define WFEDIT  0x04                    /* Editing within a line        */
-#define WFHARD  0x08                    /* Better to a full display     */
-#define WFMODE  0x10                    /* Update mode line.            */
-#define	WFCOLR	0x20			/* Needs a color change		*/
+#define WFFORCE 0x01			/* Window needs forced reframe	*/
+#define WFMOVE	0x02			/* Movement from line to line	*/
+#define WFEDIT	0x04			/* Editing within a line	*/
+#define WFHARD	0x08			/* Better to a full display	*/
+#define WFMODE	0x10			/* Update mode line.		*/
+#define WFCOLR	0x20			/* Needs a color change 	*/
 
 /*
  * Text is kept in buffers. A buffer header, described below, exists for every
@@ -382,52 +407,53 @@ typedef struct  WINDOW {
  * the buffer is not being displayed (that is, if "b_nwnd" is 0). The text for
  * the buffer is kept in a circularly linked list of lines, with a pointer to
  * the header line in "b_linep".
- * 	Buffers may be "Inactive" which means the files associated with them
+ *	Buffers may be "Inactive" which means the files associated with them
  * have not been read in yet. These get read in at "use buffer" time.
  */
-typedef struct  BUFFER {
-        struct  BUFFER *b_bufp;         /* Link to next BUFFER          */
-        struct  LINE *b_dotp;           /* Link to "." LINE structure   */
-        short   b_doto;                 /* Offset of "." in above LINE  */
-        struct  LINE *b_markp;          /* The same as the above two,   */
-        short   b_marko;                /* but for the "mark"           */
-        struct  LINE *b_linep;          /* Link to the header LINE      */
+typedef struct	BUFFER {
+	struct	BUFFER *b_bufp; 	/* Link to next BUFFER		*/
+	struct	LINE *b_dotp;		/* Link to "." LINE structure	*/
+	short	b_doto; 		/* Offset of "." in above LINE	*/
+	struct	LINE *b_markp;		/* The same as the above two,	*/
+	short	b_marko;		/* but for the "mark"		*/
+	struct	LINE *b_linep;		/* Link to the header LINE	*/
 	char	b_active;		/* window activated flag	*/
-        char    b_nwnd;                 /* Count of windows on buffer   */
-        char    b_flag;                 /* Flags                        */
-	int	b_mode;			/* editor mode of this buffer	*/
-        char    b_fname[NFILEN];        /* File name                    */
-        char    b_bname[NBUFN];         /* Buffer name                  */
+	char	b_nwnd; 		/* Count of windows on buffer	*/
+	char	b_flag; 		/* Flags			*/
+	int	b_mode; 		/* editor mode of this buffer	*/
+	char	b_fname[NFILEN];	/* File name			*/
+	char	b_bname[NBUFN]; 	/* Buffer name			*/
 #if	CRYPT
 	char	b_key[NPAT];		/* current encrypted key	*/
 #endif
-}       BUFFER;
+}	BUFFER;
 
-#define BFINVS  0x01                    /* Internal invisable buffer    */
-#define BFCHG   0x02                    /* Changed since last write     */
+#define BFINVS	0x01			/* Internal invisable buffer	*/
+#define BFCHG	0x02			/* Changed since last write	*/
+#define BFTRUNC 0x04			/* buffer was truncated when read */
 
 /*	mode flags	*/
-#define	NUMMODES	9		/* # of defined modes		*/
+#define NUMMODES	10		/* # of defined modes		*/
 
-#define	MDWRAP	0x0001			/* word wrap			*/
-#define	MDCMOD	0x0002			/* C indentation and fence match*/
-#define	MDSPELL	0x0004			/* spell error parcing		*/
-#define	MDEXACT	0x0008			/* Exact matching for searches	*/
-#define	MDVIEW	0x0010			/* read-only buffer		*/
+#define MDWRAP	0x0001			/* word wrap			*/
+#define MDCMOD	0x0002			/* C indentation and fence match*/
+#define MDSPELL 0x0004			/* spell error parcing		*/
+#define MDEXACT 0x0008			/* Exact matching for searches	*/
+#define MDVIEW	0x0010			/* read-only buffer		*/
 #define MDOVER	0x0020			/* overwrite mode		*/
-#define MDMAGIC	0x0040			/* regular expresions in search */
-#define	MDCRYPT	0x0080			/* encrytion mode active	*/
-#define	MDASAVE	0x0100			/* auto-save mode		*/
+#define MDMAGIC 0x0040			/* regular expresions in search */
+#define MDCRYPT 0x0080			/* encrytion mode active	*/
+#define MDASAVE 0x0100			/* auto-save mode		*/
 
 /*
  * The starting position of a region, and the size of the region in
  * characters, is kept in a region structure.  Used by the region commands.
  */
-typedef struct  {
-        struct  LINE *r_linep;          /* Origin LINE address.         */
-        short   r_offset;               /* Origin LINE offset.          */
-        long	r_size;                 /* Length in characters.        */
-}       REGION;
+typedef struct	{
+	struct	LINE *r_linep;		/* Origin LINE address. 	*/
+	short	r_offset;		/* Origin LINE offset.		*/
+	long	r_size; 		/* Length in characters.	*/
+}	REGION;
 
 /*
  * All text is kept in circularly linked lists of "LINE" structures. These
@@ -437,19 +463,24 @@ typedef struct  {
  * and the text. The end of line is not stored as a byte; it's implied. Future
  * additions will include update hints, and a list of marks into the line.
  */
-typedef struct  LINE {
-        struct  LINE *l_fp;             /* Link to the next line        */
-        struct  LINE *l_bp;             /* Link to the previous line    */
-        short   l_size;                 /* Allocated size               */
-        short   l_used;                 /* Used size                    */
-        char    l_text[1];              /* A bunch of characters.       */
-}       LINE;
+typedef struct	LINE {
+	struct	LINE *l_fp;		/* Link to the next line	*/
+	struct	LINE *l_bp;		/* Link to the previous line	*/
+	short	l_size; 		/* Allocated size		*/
+	short	l_used; 		/* Used size			*/
+	char	l_mode;			/* Flags			*/
+	char	l_text[1];		/* A bunch of characters.	*/
+}	LINE;
 
-#define lforw(lp)       ((lp)->l_fp)
-#define lback(lp)       ((lp)->l_bp)
-#define lgetc(lp, n)    ((lp)->l_text[(n)]&0xFF)
+#define lforw(lp)	((lp)->l_fp)
+#define lback(lp)	((lp)->l_bp)
+#define lgetc(lp, n)	((lp)->l_text[(n)]&0xFF)
 #define lputc(lp, n, c) ((lp)->l_text[(n)]=(c))
-#define llength(lp)     ((lp)->l_used)
+#define llength(lp)	((lp)->l_used)
+
+#define MAXLINE		1024		/* break read lines after 1024 chars */
+#define LMEOL		0x01		/* True end of line		*/
+#define LMEOF		0x02		/* EOL is EOF			*/
 
 /*
  * The editor communicates with the display using a high level interface. A
@@ -460,60 +491,60 @@ typedef struct  LINE {
  * "termp->t_field" style in the future, to make it possible to run more than
  * one terminal type.
  */
-typedef struct  {
-	short	t_mrow;			/* max number of rows allowable */
-        short   t_nrow;                 /* current number of rows used  */
-        short   t_mcol;                 /* max Number of columns.       */
-        short   t_ncol;                 /* current Number of columns.   */
+typedef struct	{
+	short	t_mrow; 		/* max number of rows allowable */
+	short	t_nrow; 		/* current number of rows used	*/
+	short	t_mcol; 		/* max Number of columns.	*/
+	short	t_ncol; 		/* current Number of columns.	*/
 	short	t_margin;		/* min margin for extended lines*/
 	short	t_scrsiz;		/* size of scroll region "	*/
 	int	t_pause;		/* # times thru update to pause */
-        int     (*t_open)();            /* Open terminal at the start.  */
-        int     (*t_close)();           /* Close terminal at end.       */
+	int	(*t_open)();		/* Open terminal at the start.	*/
+	int	(*t_close)();		/* Close terminal at end.	*/
 	int	(*t_kopen)();		/* Open keyboard		*/
 	int	(*t_kclose)();		/* close keyboard		*/
-        int     (*t_getchar)();         /* Get character from keyboard. */
-        int     (*t_putchar)();         /* Put character to display.    */
-        int     (*t_flush)();           /* Flush output buffers.        */
-        int     (*t_move)();            /* Move the cursor, origin 0.   */
-        int     (*t_eeol)();            /* Erase to end of line.        */
-        int     (*t_eeop)();            /* Erase to end of page.        */
-        int     (*t_beep)();            /* Beep.                        */
+	int	(*t_getchar)(); 	/* Get character from keyboard. */
+	int	(*t_putchar)(); 	/* Put character to display.	*/
+	int	(*t_flush)();		/* Flush output buffers.	*/
+	int	(*t_move)();		/* Move the cursor, origin 0.	*/
+	int	(*t_eeol)();		/* Erase to end of line.	*/
+	int	(*t_eeop)();		/* Erase to end of page.	*/
+	int	(*t_beep)();		/* Beep.			*/
 	int	(*t_rev)();		/* set reverse video state	*/
 	int	(*t_rez)();		/* change screen resolution	*/
 #if	COLOR
 	int	(*t_setfor)();		/* set forground color		*/
-	int	(*t_setback)();		/* set background color		*/
+	int	(*t_setback)(); 	/* set background color 	*/
 #endif
-}       TERM;
+}	TERM;
 
 /*	TEMPORARY macros for terminal I/O  (to be placed in a machine
 					    dependant place later)	*/
 
-#define	TTopen		(*term.t_open)
-#define	TTclose		(*term.t_close)
-#define	TTkopen		(*term.t_kopen)
-#define	TTkclose	(*term.t_kclose)
-#define	TTgetc		(*term.t_getchar)
-#define	TTputc		(*term.t_putchar)
-#define	TTflush		(*term.t_flush)
-#define	TTmove		(*term.t_move)
-#define	TTeeol		(*term.t_eeol)
-#define	TTeeop		(*term.t_eeop)
-#define	TTbeep		(*term.t_beep)
-#define	TTrev		(*term.t_rev)
-#define	TTrez		(*term.t_rez)
+#define TTopen		(*term.t_open)
+#define TTclose 	(*term.t_close)
+#define TTkopen 	(*term.t_kopen)
+#define TTkclose	(*term.t_kclose)
+#define TTgetc		(*term.t_getchar)
+#define TTputc		(*term.t_putchar)
+#define TTflush 	(*term.t_flush)
+#define TTmove		(*term.t_move)
+#define TTeeol		(*term.t_eeol)
+#define TTeeop		(*term.t_eeop)
+#define TTbeep		(*term.t_beep)
+#define TTrev		(*term.t_rev)
+#define TTrez		(*term.t_rez)
 #if	COLOR
-#define	TTforg		(*term.t_setfor)
-#define	TTbacg		(*term.t_setback)
+#define TTforg		(*term.t_setfor)
+#define TTbacg		(*term.t_setback)
 #endif
 
-/*	structure for the table of initial key bindings		*/
+/*	structure for the table of initial key bindings 	*/
 
-typedef struct  {
-        short   k_code;                 /* Key code                     */
-        int     (*k_fp)();              /* Routine to handle it         */
-}       KEYTAB;
+typedef struct	{
+	short	k_code; 		/* Key code			*/
+	int	(*k_fp)();		/* Routine to handle it 	*/
+}	KEYTAB;
 
 /*	structure for the name binding table		*/
 
@@ -529,7 +560,7 @@ typedef struct {
 	was taken up by the keycode structure)
 */
 
-typedef	struct KILL {
+typedef struct KILL {
 	struct KILL *d_next;	/* link to next chunk, NULL if last */
 	char d_chunk[KBLOCK];	/* deleted text */
 } KILL;
@@ -555,81 +586,88 @@ typedef struct WHBLOCK {
 	LINE *w_begin;		/* ptr to !while statement */
 	LINE *w_end;		/* ptr to the !endwhile statement*/
 	int w_type;		/* block type */
-	struct WHBLOCK *w_next;	/* next while */
+	struct WHBLOCK *w_next; /* next while */
 } WHBLOCK;
 
-#define	BTWHILE		1
-#define	BTBREAK		2
+#define BTWHILE 	1
+#define BTBREAK 	2
 
 /*
  * Incremental search defines.
  */
 #if	ISRCH
 
-#define	CMDBUFLEN	256	/* Length of our command buffer */
+#define CMDBUFLEN	256	/* Length of our command buffer */
 
-#define	IS_ABORT	0x07	/* Abort the isearch */
+#define IS_ABORT	0x07	/* Abort the isearch */
 #define IS_BACKSP	0x08	/* Delete previous char */
-#define	IS_TAB		0x09	/* Tab character (allowed search char) */
+#define IS_TAB		0x09	/* Tab character (allowed search char) */
 #define IS_NEWLINE	0x0D	/* New line from keyboard (Carriage return) */
-#define	IS_QUOTE	0x11	/* Quote next character */
+#define IS_QUOTE	0x11	/* Quote next character */
 #define IS_REVERSE	0x12	/* Search backward */
-#define	IS_FORWARD	0x13	/* Search forward */
-#define	IS_VMSQUOTE	0x16	/* VMS quote character */
-#define	IS_VMSFORW	0x18	/* Search forward for VMS */
-#define	IS_QUIT		0x1B	/* Exit the search */
-#define	IS_RUBOUT	0x7F	/* Delete previous character */
+#define IS_FORWARD	0x13	/* Search forward */
+#define IS_VMSQUOTE	0x16	/* VMS quote character */
+#define IS_VMSFORW	0x18	/* Search forward for VMS */
+#define IS_QUIT 	0x1B	/* Exit the search */
+#define IS_RUBOUT	0x7F	/* Delete previous character */
 
 /* IS_QUIT is no longer used, the variable metac is used instead */
 
 #endif
 
 #if	MAGIC
-
 /*
- * Defines for the metacharacters in the regular expressions in search
- * routines.
+ * Defines for the metacharacters in the regular expression
+ * search routines.
  */
+#define MCNIL		0	/* Like the '\0' for strings.*/
+#define LITCHAR 	1	/* Literal character, or string.*/
+#define ANY		2
+#define CCL		3
+#define NCCL		4
+#define BOL		5
+#define EOL		6
+#define DITTO		7
+#define CLOSURE 	256	/* An or-able value.*/
+#define MASKCL		CLOSURE - 1
 
-#define	MCNIL		0	/* Like the '\0' for strings.*/
-#define	LITCHAR		1
-#define	ANY		2
-#define	CCL		3
-#define	NCCL		4
-#define	BOL		5
-#define	EOL		6
-#define	CLOSURE		256	/* An or-able value.*/
-#define	MASKCL		CLOSURE - 1
+#define MC_ANY		'.'	/* 'Any' character (except newline).*/
+#define MC_CCL		'['	/* Character class.*/
+#define MC_NCCL 	'^'	/* Negate character class.*/
+#define MC_RCCL 	'-'	/* Range in character class.*/
+#define MC_ECCL 	']'	/* End of character class.*/
+#define MC_BOL		'^'	/* Beginning of line.*/
+#define MC_EOL		'$'	/* End of line.*/
+#define MC_CLOSURE	'*'	/* Closure - does not extend past newline.*/
+#define MC_DITTO	'&'	/* Use matched string in replacement.*/
+#define MC_ESC		'\\'	/* Escape - suppress meta-meaning.*/
 
-#define	MC_ANY		'.'	/* 'Any' character (except newline).*/
-#define	MC_CCL		'['	/* Character class.*/
-#define	MC_NCCL		'^'	/* Negate character class.*/
-#define	MC_RCCL		'-'	/* Range in character class.*/
-#define	MC_ECCL		']'	/* End of character class.*/
-#define	MC_BOL		'^'	/* Beginning of line.*/
-#define	MC_EOL		'$'	/* End of line.*/
-#define	MC_CLOSURE	'*'	/* Closure - does not extend past newline.*/
-
-#define	MC_ESC		'\\'	/* Escape - suppress meta-meaning.*/
-
-#define	BIT(n)		(1 << (n))	/* An integer with one bit set.*/
-#define	CHCASE(c)	((c) ^ DIFCASE)	/* Toggle the case of a letter.*/
+#define BIT(n)		(1 << (n))	/* An integer with one bit set.*/
+#define CHCASE(c)	((c) ^ DIFCASE) /* Toggle the case of a letter.*/
 
 /* HICHAR - 1 is the largest character we will deal with.
  * HIBYTE represents the number of bytes in the bitmap.
  */
+#define HICHAR		256
+#define HIBYTE		HICHAR >> 3
 
-#define	HICHAR		256
-#define	HIBYTE		HICHAR >> 3
-
+/* Typedefs that define the bitmap type for searching (BITMAP),
+ * the meta-character structure for MAGIC mode searching (MC),
+ * and the meta-character structure for MAGIC mode replacment (RMC).
+ */
 typedef char	*BITMAP;
 
-typedef	struct {
+typedef struct {
 	short int	mc_type;
 	union {
 		int	lchar;
 		BITMAP	cclmap;
 	} u;
 } MC;
-#endif
 
+typedef struct {
+	short int	mc_type;
+	char	*rstr;
+} RMC;
+#endif
+

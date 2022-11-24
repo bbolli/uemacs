@@ -6,30 +6,30 @@
  *
  */
 
-#include        <stdio.h>
+#include	<stdio.h>
 #include	"estruct.h"
-#include        "edef.h"
+#include	"edef.h"
 
-typedef struct  VIDEO {
-        int	v_flag;                 /* Flags */
+typedef struct	VIDEO {
+	int	v_flag;		/* Flags */
 #if	COLOR
 	int	v_fcolor;		/* current forground color */
 	int	v_bcolor;		/* current background color */
 	int	v_rfcolor;		/* requested forground color */
 	int	v_rbcolor;		/* requested background color */
 #endif
-        char    v_text[1];              /* Screen data. */
-}       VIDEO;
+	char	v_text[1];		/* Screen data. */
+}	VIDEO;
 
-#define VFCHG   0x0001                  /* Changed flag			*/
-#define	VFEXT	0x0002			/* extended (beyond column 80)	*/
-#define	VFREV	0x0004			/* reverse video status		*/
-#define	VFREQ	0x0008			/* reverse video request	*/
-#define	VFCOL	0x0010			/* color change requested	*/
+#define VFCHG	0x0001			/* Changed flag		*/
+#define VFEXT	0x0002			/* extended (beyond column 80)	*/
+#define VFREV	0x0004			/* reverse video status	*/
+#define VFREQ	0x0008			/* reverse video request	*/
+#define VFCOL	0x0010			/* color change requested	*/
 
-VIDEO   **vscreen;                      /* Virtual screen. */
+VIDEO	**vscreen;			/* Virtual screen. */
 #if	MEMMAP == 0
-VIDEO   **pscreen;                      /* Physical screen. */
+VIDEO	**pscreen;			/* Physical screen. */
 #endif
 
 /*
@@ -51,39 +51,58 @@ vtinit()
     vscreen = (VIDEO **) malloc(term.t_mrow*sizeof(VIDEO *));
 
     if (vscreen == NULL)
-        exit(1);
+	exit(1);
 
 #if	MEMMAP == 0
     pscreen = (VIDEO **) malloc(term.t_mrow*sizeof(VIDEO *));
 
     if (pscreen == NULL)
-        exit(1);
+	exit(1);
 #endif
 
     for (i = 0; i < term.t_mrow; ++i)
-        {
-        vp = (VIDEO *) malloc(sizeof(VIDEO)+term.t_mcol);
+	{
+	vp = (VIDEO *) malloc(sizeof(VIDEO)+term.t_mcol);
 
-        if (vp == NULL)
-            exit(1);
+	if (vp == NULL)
+	    exit(1);
 
 	vp->v_flag = 0;
 #if	COLOR
-	vp->v_rfcolor = 7;
-	vp->v_rbcolor = 0;
+	vp->v_rfcolor = 7;  /* white ... */
+	vp->v_rbcolor = 0;  /* on black */
 #endif
-        vscreen[i] = vp;
+	vscreen[i] = vp;
 #if	MEMMAP == 0
-        vp = (VIDEO *) malloc(sizeof(VIDEO)+term.t_mcol);
+	vp = (VIDEO *) malloc(sizeof(VIDEO)+term.t_mcol);
 
-        if (vp == NULL)
-            exit(1);
+	if (vp == NULL)
+	    exit(1);
 
 	vp->v_flag = 0;
-        pscreen[i] = vp;
+	pscreen[i] = vp;
 #endif
-        }
+	}
 }
+
+#if	CLEAN
+/* free up all the dynamically allocated video structures */
+
+vtfree()
+{
+	int i;
+	for (i = 0; i < term.t_mrow; ++i) {
+		free(vscreen[i]);
+#if	MEMMAP == 0
+		free(pscreen[i]);
+#endif
+	}
+	free(vscreen);
+#if	MEMMAP == 0
+	free(pscreen);
+#endif
+}
+#endif
 
 /*
  * Clean up the virtual terminal system, in anticipation for a return to the
@@ -126,6 +145,7 @@ int c;
 	register VIDEO *vp;	/* ptr to line being updated */
 
 	vp = vscreen[vtrow];
+	c &= 0xFF;
 
 	if (c == '\t') {
 		do {
@@ -150,15 +170,15 @@ int c;
  */
 vteeol()
 {
-    register VIDEO      *vp;
+    register VIDEO	*vp;
 
     vp = vscreen[vtrow];
     while (vtcol < term.t_ncol)
-        vp->v_text[vtcol++] = ' ';
+	vp->v_text[vtcol++] = ' ';
 }
 
 /* upscreen:	user routine to force a screen update
-		always finishes complete update		*/
+		always finishes complete update	*/
 
 upscreen(f, n)
 
@@ -290,7 +310,7 @@ WINDOW *wp;
 	return(TRUE);
 }
 
-/*	updone:	update the current line	to the virtual screen		*/
+/*	updone: update the current line to the virtual screen		*/
 
 updone(wp)
 
@@ -322,7 +342,7 @@ WINDOW *wp;	/* window to update current line in */
 	vteeol();
 }
 
-/*	updall:	update all the lines in a window on the virtual screen */
+/*	updall: update all the lines in a window on the virtual screen */
 
 updall(wp)
 
@@ -360,7 +380,7 @@ WINDOW *wp;	/* window to update lines in */
 
 }
 
-/*	updpos:	update the position of the hardware cursor and handle extended
+/*	updpos: update the position of the hardware cursor and handle extended
 		lines. This is the only update for simple moves.	*/
 
 updpos()
@@ -385,9 +405,8 @@ updpos()
 		c = lgetc(lp, i++);
 		if (c == '\t')
 			curcol |= 0x07;
-		else
-			if (c < 0x20 || c == 0x7f)
-				++curcol;
+		else if (c < 0x20 || c == 0x7f)
+			++curcol;
 
 		++curcol;
 	}
@@ -400,7 +419,7 @@ updpos()
 		lbound = 0;
 }
 
-/*	upddex:	de-extend any line that derserves it		*/
+/*	upddex: de-extend any line that derserves it		*/
 
 upddex()
 
@@ -437,14 +456,17 @@ upddex()
 	}
 }
 
-/*	updgar:	if the screen is garbage, clear the physical screen and
+/*	updgar: if the screen is garbage, clear the physical screen and
 		the virtual screen and force a full update		*/
 
 updgar()
 
 {
+#if !MEMMAP
 	register char *txt;
-	register int i,j;
+	register int j;
+#endif
+	register int i;
 
 	for (i = 0; i < term.t_nrow; ++i) {
 		vscreen[i]->v_flag |= VFCHG;
@@ -455,7 +477,7 @@ updgar()
 		vscreen[i]->v_fcolor = gfcolor;
 		vscreen[i]->v_bcolor = gbcolor;
 #endif
-#if	MEMMAP == 0
+#if	!MEMMAP
 		txt = pscreen[i]->v_text;
 		for (j = 0; j < term.t_ncol; ++j)
 			txt[j] = ' ';
@@ -464,14 +486,14 @@ updgar()
 
 	movecursor(0, 0);		 /* Erase the screen. */
 	(*term.t_eeop)();
-	sgarbf = FALSE;			 /* Erase-page clears */
-	mpresf = FALSE;			 /* the message area. */
+	sgarbf = FALSE;		 /* Erase-page clears */
+	mpresf = FALSE;		 /* the message area. */
 #if	COLOR
 	mlerase();			/* needs to be cleared if colored */
 #endif
 }
 
-/*	updupd:	update the physical screen from the virtual screen	*/
+/*	updupd: update the physical screen from the virtual screen	*/
 
 updupd(force)
 
@@ -511,7 +533,7 @@ updext()
 {
 	register int rcursor;	/* real cursor location */
 	register LINE *lp;	/* pointer to current line */
-	register int j;		/* index into line */
+	register int j;	/* index into line */
 
 	/* calculate what column the real cursor will end up in */
 	rcursor = ((curcol - term.t_ncol) % term.t_scrsiz) + term.t_margin;
@@ -580,17 +602,17 @@ struct VIDEO *vp2;	/* physical screen image */
     /* since we don't know how to make the rainbow do this, turn it off */
     flags &= (~VFREV & ~VFREQ);
 
-    cp1 = &vp1->v_text[0];                    /* Use fast video. */
+    cp1 = &vp1->v_text[0];		      /* Use fast video. */
     cp2 = &vp2->v_text[0];
     putline(row+1, 1, cp1);
     nch = term.t_ncol;
 
     do
-        {
-        *cp2 = *cp1;
-        ++cp2;
-        ++cp1;
-        }
+	{
+	*cp2 = *cp1;
+	++cp2;
+	++cp1;
+	}
     while (--nch);
     *flags &= ~VFCHG;
 #else
@@ -617,7 +639,7 @@ struct VIDEO *vp2;	/* physical screen image */
 
 #if	REVSTA | COLOR
 	/* if we need to change the reverse video status of the
-	   current line, we need to re-write the entire line     */
+	   current line, we need to re-write the entire line	 */
 	rev = (vp1->v_flag & VFREV) == VFREV;
 	req = (vp1->v_flag & VFREQ) == VFREQ;
 	if ((rev != req)
@@ -674,7 +696,7 @@ struct VIDEO *vp2;	/* physical screen image */
  */
 	/* if both lines are the same, no update needs to be done */
 	if (cp1 == &vp1->v_text[term.t_ncol]) {
- 		vp1->v_flag &= ~VFCHG;		/* flag this line is changed */
+		vp1->v_flag &= ~VFCHG;		/* flag this line is changed */
 		return(TRUE);
 	}
 
@@ -701,7 +723,7 @@ struct VIDEO *vp2;	/* physical screen image */
 			cp5 = cp3;		/* fewer characters. */
 	}
 
-	movecursor(row, cp1 - &vp1->v_text[0]);	/* Go to start of line. */
+	movecursor(row, cp1 - &vp1->v_text[0]); /* Go to start of line. */
 #if	REVSTA
 	TTrev(rev);
 #endif
@@ -739,18 +761,18 @@ modeline(wp)
     register int c;
     register int n;		/* cursor position count */
     register BUFFER *bp;
-    register i;			/* loop index */
-    register lchar;		/* character to draw line in buffer with */
-    register firstm;		/* is this the first mode? */
+    register int i;		/* loop index */
+    register int lchar;	/* character to draw line in buffer with */
+    register int firstm;	/* is this the first mode? */
     char tline[NLINE];		/* buffer for part of mode line */
 
-    n = wp->w_toprow+wp->w_ntrows;      	/* Location. */
+    n = wp->w_toprow+wp->w_ntrows;		/* Location. */
     vscreen[n]->v_flag |= VFCHG | VFREQ | VFCOL;/* Redraw next time. */
 #if	COLOR
-    vscreen[n]->v_rfcolor = 0;			/* black on */
-    vscreen[n]->v_rbcolor = 7;			/* white.....*/
+    vscreen[n]->v_rfcolor = 7;			/* white on */
+    vscreen[n]->v_rbcolor = 4;			/* blue .....*/
 #endif
-    vtmove(n, 0);                       	/* Seek to right line. */
+    vtmove(n, 0);				/* Seek to right line. */
     if (wp == curwp)				/* mark the current buffer */
 	lchar = '=';
     else
@@ -761,22 +783,19 @@ modeline(wp)
 #endif
 		lchar = '-';
 
-    vtputc(lchar);
     bp = wp->w_bufp;
-
-    if ((bp->b_flag&BFCHG) != 0)                /* "*" if changed. */
-        vtputc('*');
+    if ((bp->b_flag & BFTRUNC) != 0)		/* '#' if truncated */
+	vtputc('#');
     else
-        vtputc(lchar);
+	vtputc(lchar);
 
-    n  = 2;
-    strcpy(tline, " ");				/* Buffer name. */
-    strcat(tline, PROGNAME);
-    strcat(tline, " ");
-    strcat(tline, VERSION);
-    strcat(tline, " (");
+    if ((bp->b_flag&BFCHG) != 0)		/* '*' if changed */
+	vtputc('*');
+    else
+	vtputc(lchar);
 
-    /* display the modes */
+    n = 2;
+    strcpy(tline, " (");	/* display the modes */
 
 	firstm = TRUE;
 	for (i = 0; i < NUMMODES; i++)	/* add in the mode flags */
@@ -790,10 +809,10 @@ modeline(wp)
 
     cp = &tline[0];
     while ((c = *cp++) != 0)
-        {
-        vtputc(c);
-        ++n;
-        }
+	{
+	vtputc(c);
+	++n;
+	}
 
 #if 0
     vtputc(lchar);
@@ -807,52 +826,52 @@ modeline(wp)
     n += 8;
 #endif
 
-    vtputc(lchar);
+    vtputc(lchar);			/* Buffer name */
     vtputc(lchar);
     vtputc(' ');
     n += 3;
     cp = &bp->b_bname[0];
 
     while ((c = *cp++) != 0)
-        {
-        vtputc(c);
-        ++n;
-        }
+	{
+	vtputc(c);
+	++n;
+	}
 
     vtputc(' ');
     vtputc(lchar);
     vtputc(lchar);
     n += 3;
 
-    if (bp->b_fname[0] != 0)            /* File name. */
-        {
+    if (bp->b_fname[0] != 0)		/* File name. */
+	{
 	vtputc(' ');
 	++n;
-        cp = "File: ";
+	cp = "File: ";
 
-        while ((c = *cp++) != 0)
-            {
-            vtputc(c);
-            ++n;
-            }
+	while ((c = *cp++) != 0)
+	    {
+	    vtputc(c);
+	    ++n;
+	    }
 
-        cp = &bp->b_fname[0];
+	cp = &bp->b_fname[0];
 
-        while ((c = *cp++) != 0)
-            {
-            vtputc(c);
-            ++n;
-            }
+	while ((c = *cp++) != 0)
+	    {
+	    vtputc(c);
+	    ++n;
+	    }
 
-        vtputc(' ');
-        ++n;
-        }
+	vtputc(' ');
+	++n;
+	}
 
-    while (n < term.t_ncol)             /* Pad to full width. */
-        {
-        vtputc(lchar);
-        ++n;
-        }
+    while (n < term.t_ncol)		/* Pad to full width. */
+	{
+	vtputc(lchar);
+	++n;
+	}
 }
 
 upmode()	/* update all the mode lines */
@@ -873,14 +892,13 @@ upmode()	/* update all the mode lines */
  * random calls. Update "ttrow" and "ttcol".
  */
 movecursor(row, col)
-    {
-    if (row!=ttrow || col!=ttcol)
-        {
-        ttrow = row;
-        ttcol = col;
-        TTmove(row, col);
-        }
-    }
+{
+	if (row!=ttrow || col!=ttcol)  {
+		ttrow = row;
+		ttcol = col;
+		TTmove(row, col);
+	}
+}
 
 /*
  * Erase the message line. This is a special routine because the message line
@@ -890,10 +908,10 @@ movecursor(row, col)
 mlerase()
     {
     int i;
-    
+
     movecursor(term.t_nrow, 0);
     if (discmd == FALSE)
-    	return;
+	return;
 
 #if	COLOR
      TTforg(7);
@@ -902,10 +920,10 @@ mlerase()
     if (eolexist == TRUE)
 	    TTeeol();
     else {
-        for (i = 0; i < term.t_ncol - 1; i++)
-            TTputc(' ');
-        movecursor(term.t_nrow, 1);	/* force the move! */
-        movecursor(term.t_nrow, 0);
+	for (i = 0; i < term.t_ncol - 1; i++)
+	    TTputc(' ');
+	movecursor(term.t_nrow, 1);	/* force the move! */
+	movecursor(term.t_nrow, 0);
     }
     TTflush();
     mpresf = FALSE;
@@ -924,7 +942,7 @@ char *fmt;	/* format string for output */
 char *arg;	/* pointer to first argument to print */
 
 {
-	register int c;		/* current char in format string */
+	register int c;	/* current char in format string */
 	register char *ap;	/* ptr to current data field */
 
 	/* if we are not currently echoing on the command line, abort this */
@@ -940,20 +958,25 @@ char *arg;	/* pointer to first argument to print */
 #endif
 
 	/* if we can not erase to end-of-line, do it manually */
-	if (eolexist == FALSE) {
+	if (eolexist == FALSE)
 		mlerase();
-		TTflush();
-	}
 
 	movecursor(term.t_nrow, 0);
 	ap = (char *) &arg;
-	while ((c = *fmt++) != 0) {
-		if (c != '%') {
-			TTputc(c);
-			++ttcol;
-		} else {
-			c = *fmt++;
-			switch (c) {
+	while (ttcol < term.t_ncol - 2 && (c = *fmt++) != 0)
+		if (c != '%')
+			mlputc(c);
+		else
+			switch (c = *fmt++)  {
+
+				case '%':
+					mlputc('%');
+					break;
+
+				case 'c':
+					mlputc( *( (int*)ap )++ );
+					break;
+
 				case 'd':
 					mlputi(*(int *)ap, 10);
 					ap += sizeof(int);
@@ -985,11 +1008,9 @@ char *arg;	/* pointer to first argument to print */
 					break;
 
 				default:
-					TTputc(c);
-					++ttcol;
+					mlputc('%');
+					mlputc(c);
 			}
-		}
-	}
 
 	/* if we can, erase to the end of screen */
 	if (eolexist == TRUE)
@@ -1008,7 +1029,7 @@ mlforce(s)
 char *s;	/* string to force out */
 
 {
-	register oldcmd;	/* original command display flag */
+	register int oldcmd;	/* original command display flag */
 
 	oldcmd = discmd;	/* save the discmd value */
 	discmd = TRUE;		/* and turn display on */
@@ -1038,20 +1059,20 @@ mlputs(s)
  * position.
  */
 mlputi(i, r)
-    {
+{
     register int q;
     static char hexdigits[] = "0123456789ABCDEF";
 
     if (i < 0)
-        {
-        i = -i;
-        TTputc('-');
-        }
+	{
+	i = -i;
+	TTputc('-');
+	}
 
     q = i/r;
 
     if (q != 0)
-        mlputi(q, r);
+	mlputi(q, r);
 
     TTputc(hexdigits[i%r]);
     ++ttcol;
@@ -1066,15 +1087,15 @@ mlputli(l, r)
     register long q;
 
     if (l < 0)
-        {
-        l = -l;
-        TTputc('-');
-        }
+	{
+	l = -l;
+	TTputc('-');
+	}
 
     q = l/r;
 
     if (q != 0)
-        mlputli(q, r);
+	mlputli(q, r);
 
     TTputc((int)(l%r)+'0');
     ++ttcol;
@@ -1102,7 +1123,7 @@ int s;	/* scaled integer to output */
 	TTputc((f / 10) + '0');
 	TTputc((f % 10) + '0');
 	ttcol += 3;
-}	
+}
 
 #if RAINBOW
 
@@ -1114,8 +1135,8 @@ putline(row, col, buf)
 
     n = strlen(buf);
     if (col + n - 1 > term.t_ncol)
-        n = term.t_ncol - col + 1;
+	n = term.t_ncol - col + 1;
     Put_Data(row, col, n, buf);
     }
 #endif
-
+

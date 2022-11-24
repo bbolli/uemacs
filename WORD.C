@@ -1,8 +1,12 @@
 /*
  * The routines in this file implement commands that work word or a
  * paragraph at a time.  There are all sorts of word mode commands.  If I
- * do any sentence mode commands, they are likely to be put in this file. 
+ * do any sentence mode commands, they are likely to be put in this file.
  */
+
+#if	MEGAMAX & ST520
+overlay "word"
+#endif
 
 #include	<stdio.h>
 #include	"estruct.h"
@@ -19,10 +23,10 @@ wrapword(f, n)
 
 int f;		/* default flag */
 int n;		/* numeric argument */
- 
+
 {
 	register int cnt;	/* size of word wrapped to next line */
-	register int c;		/* charector temporary */
+	register int c; 	/* charector temporary */
 
 	/* backup from the <NL> 1 char */
 	if (!backchar(0, 1))
@@ -92,15 +96,22 @@ forwword(f, n)
 	if (n < 0)
 		return (backword(f, -n));
 	while (n--) {
-		while (inword() == TRUE) {
+#if	NFWORD
+		while (inword() != FALSE) {
 			if (forwchar(FALSE, 1) == FALSE)
 				return (FALSE);
 		}
-
+#endif
 		while (inword() == FALSE) {
 			if (forwchar(FALSE, 1) == FALSE)
 				return (FALSE);
 		}
+#if	NFWORD == 0
+		while (inword() != FALSE) {
+			if (forwchar(FALSE, 1) == FALSE)
+				return (FALSE);
+		}
+#endif
 	}
 	return(TRUE);
 }
@@ -114,7 +125,7 @@ upperword(f, n)
 {
 	register int	c;
 
-	if (curbp->b_mode&MDVIEW)	/* don't allow this command if	*/
+	if (curbp->b_mode&MDVIEW)	/* don't allow this command if  */
 		return(rdonly());	/* we are in read only mode	*/
 	if (n < 0)
 		return (FALSE);
@@ -146,7 +157,7 @@ lowerword(f, n)
 {
 	register int	c;
 
-	if (curbp->b_mode&MDVIEW)	/* don't allow this command if	*/
+	if (curbp->b_mode&MDVIEW)	/* don't allow this command if  */
 		return(rdonly());	/* we are in read only mode	*/
 	if (n < 0)
 		return (FALSE);
@@ -179,7 +190,7 @@ capword(f, n)
 {
 	register int	c;
 
-	if (curbp->b_mode&MDVIEW)	/* don't allow this command if	*/
+	if (curbp->b_mode&MDVIEW)	/* don't allow this command if  */
 		return(rdonly());	/* we are in read only mode	*/
 	if (n < 0)
 		return (FALSE);
@@ -215,88 +226,58 @@ capword(f, n)
 /*
  * Kill forward by "n" words. Remember the location of dot. Move forward by
  * the right number of words. Put dot back where it was and issue the kill
- * command for the right number of characters. With a zero argument, just
- * kill one word and no whitespace. Bound to "M-D".
+ * command for the right number of characters. Bound to "M-D".
  */
 delfword(f, n)
 {
-	register LINE	*dotp;	/* original cursor line */
-	register int	doto;	/*	and row */
-	register int c;		/* temp char */
-	long size;		/* # of chars to delete */
+	register LINE	*dotp;
+	register int	doto;
+	long size;
 
-	/* don't allow this command if we are in read only mode */
-	if (curbp->b_mode&MDVIEW)
-		return(rdonly());
-
-	/* ignore the command if there is a negative argument */
+	if (curbp->b_mode&MDVIEW)	/* don't allow this command if  */
+		return(rdonly());	/* we are in read only mode	*/
 	if (n < 0)
 		return (FALSE);
-
-	/* Clear the kill buffer if last command wasn't a kill */
-	if ((lastflag&CFKILL) == 0)
-		kdelete();
-	thisflag |= CFKILL;	/* this command is a kill */
-
-	/* save the current cursor position */
+	if ((lastflag&CFKILL) == 0)	/* Clear kill buffer if */
+		kdelete();		/* last wasn't a kill.  */
+	thisflag |= CFKILL;
 	dotp = curwp->w_dotp;
 	doto = curwp->w_doto;
-
-	/* figure out how many characters to give the axe */
 	size = 0;
-
-	/* get us into a word.... */
-	while (inword() == FALSE) {
-		if (forwchar(FALSE, 1) == FALSE)
-			return(FALSE);
-		++size;
-	}
-
-	if (n == 0) {
-		/* skip one word, no whitespace! */
-		while (inword() == TRUE) {
-			if (forwchar(FALSE, 1) == FALSE)
+	while (n--) {
+#if	NFWORD
+		if (curwp->w_doto == llength(curwp->w_dotp)) {
+			if (forwchar(FALSE,1) == FALSE)
 				return(FALSE);
 			++size;
 		}
-	} else {
-		/* skip n words.... */
-		while (n--) {
-	
-			/* if we are at EOL; skip to the beginning of the next */
-			while (curwp->w_doto == llength(curwp->w_dotp)) {
-				if (forwchar(FALSE, 1) == FALSE)
-					return(FALSE);
-				++size;
-			}
-	
-			/* move forward till we are at the end of the word */
-			while (inword() == TRUE) {
-				if (forwchar(FALSE, 1) == FALSE)
-					return(FALSE);
-				++size;
-			}
-	
-			/* if there are more words, skip the interword stuff */
-			if (n != 0)
-				while (inword() == FALSE) {
-					if (forwchar(FALSE, 1) == FALSE)
-						return(FALSE);
-					++size;
-				}
-		}
-	
-		/* skip whitespace and newlines */
-		while ((curwp->w_doto == llength(curwp->w_dotp)) ||
-			((c = lgetc(curwp->w_dotp, curwp->w_doto)) == ' ') ||
-			(c == '\t')) {
-				if (forwchar(FALSE, 1) == FALSE)
-					break;
-				++size;
-		}
-	}
 
-	/* restore the original position and delete the words */
+		while (inword(-1) != FALSE) {
+			if (forwchar(FALSE,1) == FALSE)
+				return(FALSE);
+			++size;
+		}
+
+		while ((inword() == FALSE) &&
+				(curwp->w_doto != llength(curwp->w_dotp))) {
+			if (forwchar(FALSE, 1) == FALSE)
+				return (FALSE);
+			++size;
+		}
+#else
+		while (inword() == FALSE) {
+			if (forwchar(FALSE, 1) == FALSE)
+				return (FALSE);
+			++size;
+		}
+
+		while (inword() != FALSE) {
+			if (forwchar(FALSE, 1) == FALSE)
+				return (FALSE);
+			++size;
+		}
+#endif
+	}
 	curwp->w_dotp = dotp;
 	curwp->w_doto = doto;
 	return (ldelete(size, TRUE));
@@ -311,57 +292,59 @@ delbword(f, n)
 {
 	long size;
 
-	/* don't allow this command if we are in read only mode */
-	if (curbp->b_mode&MDVIEW)
-		return(rdonly());
-
-	/* ignore the command if there is a nonpositive argument */
-	if (n <= 0)
+	if (curbp->b_mode&MDVIEW)	/* don't allow this command if  */
+		return(rdonly());	/* we are in read only mode	*/
+	if (n < 0)
 		return (FALSE);
-
-	/* Clear the kill buffer if last command wasn't a kill */
-	if ((lastflag&CFKILL) == 0)
-		kdelete();
-	thisflag |= CFKILL;	/* this command is a kill */
-
+	if ((lastflag&CFKILL) == 0)	/* Clear kill buffer if */
+		kdelete();		/* last wasn't a kill.  */
+	thisflag |= CFKILL;
 	if (backchar(FALSE, 1) == FALSE)
 		return (FALSE);
 	size = 0;
 	while (n--) {
-		while (inword() == FALSE) {
+		while (inword(-1) == FALSE) {
 			if (backchar(FALSE, 1) == FALSE)
 				return (FALSE);
 			++size;
 		}
-		while (inword() != FALSE) {
-			++size;
+		while (inword(-1) != FALSE) {
 			if (backchar(FALSE, 1) == FALSE)
-				goto bckdel;
+				return (FALSE);
+			++size;
 		}
 	}
 	if (forwchar(FALSE, 1) == FALSE)
 		return (FALSE);
-bckdel:	return (ldelete(size, TRUE));
+	return (ldelete(size, TRUE));
 }
 
 /*
- * Return TRUE if the character at dot is a character that is considered to be
- * part of a word. The word character list is hard coded. Should be setable.
+ * Return TRUE if the passed character or the character at dot is a character
+ * that is considered to be part of a word. The word character list is hard
+ * coded. Should be setable.
  */
-inword()
+inword(c)
+register int c;
 {
-	register int	c;
+	char *strchr(char *, char);
 
-	if (curwp->w_doto == llength(curwp->w_dotp))
-		return (FALSE);
-	c = lgetc(curwp->w_dotp, curwp->w_doto);
+	if (c < 0)  {
+		if (curwp->w_doto == llength(curwp->w_dotp))
+			return (FALSE);
+		c = lgetc(curwp->w_dotp, curwp->w_doto);
+	}
 	if (c>='a' && c<='z')
-		return (TRUE);
+		return TRUE;
 	if (c>='A' && c<='Z')
-		return (TRUE);
+		return TRUE;
 	if (c>='0' && c<='9')
-		return (TRUE);
-	return (FALSE);
+		return TRUE;
+	if (c=='$' || c=='_')                   /* For identifiers      */
+		return TRUE;
+	if (c && strchr("„‰‹”Ž™š…Š•— ‚¡¢£ƒˆŒ“–‡€¤¥˜", c))	/* For strangers */
+		return TRUE;
+	return FALSE;
 }
 
 #if	WORDPRO
@@ -371,18 +354,20 @@ fillpara(f, n)	/* Fill the current paragraph according to the current
 int f, n;	/* deFault flag and Numeric argument */
 
 {
-	register int c;			/* current char durring scan	*/
+	register int c; 		/* current char durring scan	*/
 	register int wordlen;		/* length of current word	*/
-	register int clength;		/* position on line during fill	*/
-	register int i;			/* index during word copy	*/
-	register int newlength;		/* tentative new line length	*/
+	register int clength;		/* position on line during fill */
+	register int i; 		/* index during word copy	*/
+	register int newlength; 	/* tentative new line length	*/
 	register int eopflag;		/* Are we at the End-Of-Paragraph? */
-	register int firstflag;		/* first word? (needs no space)	*/
-	register LINE *eopline;		/* pointer to line just past EOP */
+	register int firstflag; 	/* first word? (needs no space) */
+	register LINE *eopline; 	/* pointer to line just past EOP */
+#if 0
 	register int dotflag;		/* was the last char a period?	*/
+#endif
 	char wbuf[NSTRING];		/* buffer for current word	*/
 
-	if (curbp->b_mode&MDVIEW)	/* don't allow this command if	*/
+	if (curbp->b_mode&MDVIEW)	/* don't allow this command if  */
 		return(rdonly());	/* we are in read only mode	*/
 	if (fillcol == 0) {	/* no fill column set */
 		mlwrite("No fill column set");
@@ -401,7 +386,9 @@ int f, n;	/* deFault flag and Numeric argument */
 	if (clength && curwp->w_dotp->l_text[0] == TAB)
 		clength = 8;
 	wordlen = 0;
+#if 0
 	dotflag = FALSE;
+#endif
 
 	/* scan through lines, filling words */
 	firstflag = TRUE;
@@ -420,12 +407,14 @@ int f, n;	/* deFault flag and Numeric argument */
 
 		/* if not a separator, just add it in */
 		if (c != ' ' && c != '\t') {
-			dotflag = (c == '.');		/* was it a dot */
+#if 0
+			dotflag = (c == '.');           /* was it a dot */
+#endif
 			if (wordlen < NSTRING - 1)
 				wbuf[wordlen++] = c;
 		} else if (wordlen) {
 			/* at a word break with a word waiting */
-			/* calculate tantitive new length with word added */
+			/* calculate tentative new length with word added */
 			newlength = clength + 1 + wordlen;
 			if (newlength <= fillcol) {
 				/* add word to current line */
@@ -445,10 +434,12 @@ int f, n;	/* deFault flag and Numeric argument */
 				linsert(1, wbuf[i]);
 				++clength;
 			}
+#if 0
 			if (dotflag) {
 				linsert(1, ' ');
 				++clength;
 			}
+#endif
 			wordlen = 0;
 		}
 	}
@@ -477,7 +468,7 @@ int n;	/* # of paras to delete */
 		/* go to the beginning of the paragraph */
 		gotobop(FALSE, 1);
 		curwp->w_doto = 0;	/* force us to the beginning of line */
-	
+
 		/* and delete it */
 		if ((status = killregion(FALSE, 1)) != TRUE)
 			return(status);
@@ -537,9 +528,7 @@ int f, n;	/* ignored numeric arguments */
 		}
 
 		/* and tabulate it */
-		wordflag = ((ch >= 'a' && ch <= 'z') ||
-			    (ch >= 'A' && ch <= 'Z') ||
-			    (ch >= '0' && ch <= '9'));
+		wordflag = inword(ch);
 		if (wordflag == TRUE && lastword == FALSE)
 			++nwords;
 		lastword = wordflag;
@@ -552,8 +541,9 @@ int f, n;	/* ignored numeric arguments */
 	else
 		avgch = 0;
 
-	mlwrite("Words %D Chars %D Lines %d Avg chars/word %f",
+	mlwrite("Words %D  Chars %D  Lines %d  Avg chars/word %f",
 		nwords, nchars, nlines + 1, avgch);
 	return(TRUE);
 }
 #endif
+

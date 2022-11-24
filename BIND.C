@@ -55,7 +55,7 @@ help(f, n)	/* give me some help!!!!
 deskey(f, n)	/* describe the command for a certain key */
 
 {
-	register int c;		/* key to describe */
+	register int c;	/* key to describe */
 	register char *ptr;	/* string pointer to scan output strings */
 	char outseq[NSTRING];	/* output buffer for command sequence */
 	int (*getbind())();
@@ -87,7 +87,7 @@ int f, n;	/* command arguments [IGNORED] */
 
 {
 	register unsigned int c;/* command key to bind */
-	register (*kfunc)();	/* ptr to the requested function to bind to */
+	register int (*kfunc)();/* ptr to the requested function to bind to */
 	register KEYTAB *ktp;	/* pointer into the command table */
 	register int found;	/* matched command flag */
 	char outseq[80];	/* output buffer for keystroke sequence */
@@ -106,7 +106,7 @@ int f, n;	/* command arguments [IGNORED] */
 
 	/* get the command sequence to bind */
 	c = getckey((kfunc == meta) || (kfunc == cex) ||
-	            (kfunc == unarg) || (kfunc == ctrlg));
+		    (kfunc == unarg) || (kfunc == ctrlg));
 
 	/* change it to something we can print as well */
 	cmdstr(c, &outseq[0]);
@@ -167,14 +167,14 @@ int f, n;	/* command arguments [IGNORED] */
 	return(TRUE);
 }
 
-/* unbindkey:	delete a key from the key binding table	*/
+/* unbindkey:	delete a key from the key binding table */
 
 unbindkey(f, n)
 
 int f, n;	/* command arguments [IGNORED] */
 
 {
-	register int c;		/* command key to unbind */
+	register int c;	/* command key to unbind */
 	char outseq[80];	/* output buffer for keystroke sequence */
 
 	/* prompt the user to type in a key to unbind */
@@ -267,13 +267,12 @@ char *mstring;	/* match string if a partial list */
 #endif
 {
 #if	ST520 & LATTICE
-#define	register		
+#define register
 #endif
 	register WINDOW *wp;	/* scanning pointer to windows */
 	register KEYTAB *ktp;	/* pointer into the command table */
 	register NBIND *nptr;	/* pointer into the name binding table */
 	register BUFFER *bp;	/* buffer to put binding list into */
-	char *strp;		/* pointer int string to send */
 	int cpos;		/* current position to use in outseq */
 	char outseq[80];	/* output buffer for keystroke sequence */
 
@@ -292,16 +291,16 @@ char *mstring;	/* match string if a partial list */
 	mlwrite("[Building binding list]");
 
 	/* disconect the current buffer */
-        if (--curbp->b_nwnd == 0) {             /* Last use.            */
-                curbp->b_dotp  = curwp->w_dotp;
-                curbp->b_doto  = curwp->w_doto;
-                curbp->b_markp = curwp->w_markp;
-                curbp->b_marko = curwp->w_marko;
-        }
+	if (--curbp->b_nwnd == 0) {		/* Last use.		*/
+		curbp->b_dotp  = curwp->w_dotp;
+		curbp->b_doto  = curwp->w_doto;
+		curbp->b_markp = curwp->w_markp;
+		curbp->b_marko = curwp->w_marko;
+	}
 
 	/* connect the current window to this buffer */
 	curbp = bp;	/* make this buffer current in current window */
-	bp->b_mode = 0;		/* no modes active in binding list */
+	bp->b_mode = 0;	/* no modes active in binding list */
 	bp->b_nwnd++;		/* mark us as more in use */
 	wp = curwp;
 	wp->w_bufp = bp;
@@ -319,7 +318,7 @@ char *mstring;	/* match string if a partial list */
 		/* add in the command name */
 		strcpy(outseq, nptr->n_name);
 		cpos = strlen(outseq);
-		
+
 #if	APROP
 		/* if we are executing an apropos command..... */
 		if (type == FALSE &&
@@ -337,14 +336,11 @@ char *mstring;	/* match string if a partial list */
 
 				/* add in the command sequence */
 				cmdstr(ktp->k_code, &outseq[cpos]);
-				while (outseq[cpos] != 0)
-					++cpos;
+				strcat(outseq, "\n");
 
 				/* and add it as a line into the buffer */
-				strp = &outseq[0];
-				while (*strp != 0)
-					linsert(1, *strp++);
-				lnewline();
+				if (linstr(outseq) != TRUE)
+					return(FALSE);
 
 				cpos = 0;	/* and clear the line */
 			}
@@ -353,11 +349,10 @@ char *mstring;	/* match string if a partial list */
 
 		/* if no key was bound, we need to dump it anyway */
 		if (cpos > 0) {
+			outseq[cpos++] = '\n';
 			outseq[cpos] = 0;
-			strp = &outseq[0];
-			while (*strp != 0)
-				linsert(1, *strp++);
-			lnewline();
+			if (linstr(outseq) != TRUE)
+				return(FALSE);
 		}
 
 fail:		/* and on to the next name */
@@ -413,7 +408,7 @@ char *sub;	/* substring to look for */
 }
 #endif
 
-/* get a command key sequence from the keyboard	*/
+/* get a command key sequence from the keyboard */
 
 unsigned int getckey(mflag)
 
@@ -421,11 +416,6 @@ int mflag;	/* going for a meta sequence? */
 
 {
 	register unsigned int c;	/* character fetched */
-#if	MSC | TURBO
-	register unsigned char *tp;	/* pointer into the token */
-#else
-	register char *tp;		/* pointer into the token */
-#endif
 	char tok[NSTRING];		/* command incoming */
 
 	/* check to see if we are executing a command line */
@@ -479,13 +469,11 @@ int hflag;	/* Look in the HOME environment variable first? */
 	register char *home;	/* path to home directory */
 	register char *path;	/* environmental PATH variable */
 	register char *sp;	/* pointer into path spec */
-	register int i;		/* index */
-	register int status;	/* return status */
+	register int i;	/* index */
 	static char fspec[NSTRING];	/* full path spec to search */
 	char *getenv();
 
 #if	ENVFUNC
-
 	if (hflag) {
 		home = getenv("HOME");
 		if (home != NULL) {
@@ -495,19 +483,15 @@ int hflag;	/* Look in the HOME environment variable first? */
 			strcat(fspec, fname);
 
 			/* and try it out */
-			if (ffropen(fspec) == FIOSUC) {
-				ffclose();
+			if (fexist(fspec))
 				return(fspec);
-			}
 		}
 	}
 #endif
 
 	/* always try the current directory first */
-	if (ffropen(fname) == FIOSUC) {
-		ffclose();
+	if (fexist(fname))
 		return(fname);
-	}
 
 #if	ENVFUNC
 	/* get the PATH variable */
@@ -517,19 +501,32 @@ int hflag;	/* Look in the HOME environment variable first? */
 
 			/* build next possible file spec */
 			sp = fspec;
+#if	ST520 & MWC
+			while (*path && (*path != PATHCHR) && (*path != ','))
+#else
 			while (*path && (*path != PATHCHR))
+#endif
 				*sp++ = *path++;
-			*sp++ = '/';
+
+			/* add a terminating dir separator if we need it */
+			if (sp != fspec)
+#if	ST520
+				*sp++ = '\\';
+#else
+				*sp++ = '/';
+#endif
 			*sp = 0;
 			strcat(fspec, fname);
 
 			/* and try it out */
-			if (ffropen(fspec) == FIOSUC) {
-				ffclose();
+			if (fexist(fspec))
 				return(fspec);
-			}
 
+#if	ST520 & MWC
+			if ((*path == PATHCHR) || (*path == ','))
+#else
 			if (*path == PATHCHR)
+#endif
 				++path;
 		}
 #endif
@@ -540,10 +537,8 @@ int hflag;	/* Look in the HOME environment variable first? */
 		strcat(fspec, fname);
 
 		/* and try it out */
-		if (ffropen(fspec) == FIOSUC) {
-			ffclose();
+		if (fexist(fspec))
 			return(fspec);
-		}
 	}
 
 	return(NULL);	/* no such luck */
@@ -599,12 +594,12 @@ int c;	/* key to find what is bound to it */
 {
 	register KEYTAB *ktp;
 
-        ktp = &keytab[0];                       /* Look in key table.   */
-        while (ktp->k_fp != NULL) {
-                if (ktp->k_code == c)
-                        return(ktp->k_fp);
-                ++ktp;
-        }
+	ktp = &keytab[0];			/* Look in key table.	*/
+	while (ktp->k_fp != NULL) {
+		if (ktp->k_code == c)
+			return(ktp->k_fp);
+		++ktp;
+	}
 
 	/* no such binding */
 	return(NULL);
@@ -653,7 +648,7 @@ char *fname;	/* name to attempt to match */
 
 unsigned int stock(keyname)
 
-char *keyname;		/* name of key to translate to Command key form */
+unsigned char *keyname;     /* name of key to translate to Command key form */
 
 {
 	register unsigned int c;	/* key sequence to return */

@@ -58,7 +58,7 @@ ffclose()
 	fputc(26, ffp);		/* add a ^Z at the end of the file */
 #endif
 	
-#if     V7 | USG | BSD | (MSDOS & (LATTICE | MSC | TURBO))
+#if     V7 | USG | BSD | (MSDOS & (LATTICE | MSC | TURBO)) | (ST520 & MWC)
         if (fclose(ffp) != FALSE) {
                 mlwrite("Error closing file");
                 return(FIOERR);
@@ -96,7 +96,7 @@ char    buf[];
                 fputc(buf[i]&0xFF, ffp);
 #endif
 
-#if	ST520
+#if	ST520 & ADDCR
         fputc('\r', ffp);
 #endif        
         fputc('\n', ffp);
@@ -115,7 +115,8 @@ char    buf[];
  * at the end of the file that don't have a newline present. Check for I/O
  * errors too. Return status.
  */
-ffgetline()
+ffgetline(lenghtp)
+int *lengthp;
 
 {
         register int c;		/* current character read */
@@ -174,9 +175,29 @@ ffgetline()
         fline[i] = 0;
 #if	CRYPT
 	if (cryptflag)
-		crypt(fline, strlen(fline));
+		crypt(fline, i);
 #endif
+	*lengthp = i;
         return(FIOSUC);
+}
+
+int fexist(fname)	/* does <fname> exist on disk? */
+
+char *fname;		/* file to check for existance */
+
+{
+	FILE *fp;
+
+	/* try to open the file for reading */
+	fp = fopen(fname, "r");
+
+	/* if it fails, just return false! */
+	if (fp == NULL)
+		return(FALSE);
+
+	/* otherwise, close it and report true */
+	fclose(fp);
+	return(TRUE);
 }
 
 #if	AZTEC & MSDOS

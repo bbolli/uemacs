@@ -43,9 +43,15 @@
  *
  *	July 1987: John M. Gamble
  *	Set the variables matchlen and matchoff in the 'unreplace'
- *	section of replaces().  It would confuse the function
- *	savematch() if you replaced, unreplaced, then replaced
+ *	section of replaces().  The function savematch() would
+ *	get confused if you replaced, unreplaced, then replaced
  *	again (serves you right for being so wishy-washy...)
+ *
+ *	August 1987: John M. Gamble
+ *	Put in new function rmcstr() to create the replacement
+ *	meta-character array.  Modified delins() so that it knows
+ *	whether or not to make use of the array.  And, put in the
+ *	appropriate new structures and variables.
  */
 
 #include        <stdio.h>
@@ -56,23 +62,25 @@
 #define	void	int
 #endif
 
-static int    amatch();
 static int    readpattern();
 static int    replaces();
 static int    nextch();
-static int    mcstr();
-static int    mceq();
+#if	MAGIC
 static int    cclmake();
+static int    mcstr();
+static int    rmcstr();
+static int    mceq();
+static void   setbit();
+static int    amatch();
 static int    biteq();
-static BITMAP   clearbits();
-static void     setbit();
+static BITMAP clearbits();
+#endif
 
 /*
  * forwsearch -- Search forward.  Get a search string from the user, and
  *	search for the string.  If found, reset the "." to be just after
  *	the match string, and (perhaps) repaint the display.
  */
-
 forwsearch(f, n)
 int f, n;	/* default flag / numeric argument */
 {
@@ -218,9 +226,7 @@ int f, n;	/* default flag / numeric argument */
  *	(the last character that was matched).
  */
 backhunt(f, n)
-
 int f, n;	/* default flag / numeric argument */
-
 {
 	register int	status = TRUE;
 
@@ -276,7 +282,7 @@ int f, n;	/* default flag / numeric argument */
  *	and (perhaps) repaint the display.
  */
 int	mcscanner(mcpatrn, direct, beg_or_end)
-MC	*mcpatrn;		/* pointer into pattern */
+MC	*mcpatrn;	/* pointer into pattern */
 int	direct;		/* which way to go.*/
 int	beg_or_end;	/* put point at beginning or end of pattern.*/
 {
@@ -290,8 +296,8 @@ int	beg_or_end;	/* put point at beginning or end of pattern.*/
 
 	/*
 	 * Save the old matchlen length, in case it is
-	 * horribly different (closure) from the old length.
-	 * This is terribly important for query-replace undo
+	 * very different (closure) from the old length.
+	 * This is important for query-replace undo
 	 * command.
 	 */
 	mlenold = matchlen;
@@ -581,6 +587,7 @@ int	eq(bc, pc)
 register int	bc;
 register int	pc;
 {
+	bc &= 255,  pc &= 255;
 	if ((curwp->w_bufp->b_mode & MDEXACT) == 0)
 	{
 		if (islower(bc))
@@ -627,21 +634,25 @@ int	srch;
 		strcpy(apat, tpat);
 		if (srch)	/* If we are doing the search string.*/
 		{
-			mlenold = matchlen = strlen(apat);
-			/* Reverse string copy.
+			/* Reverse string copy, and remember
+			 * the length for substitution purposes.
 			 */
 			rvstrcpy(tap, apat);
-#if	MAGIC
-			/* Only make the meta-pattern if in magic mode,
-			 * since the pattern in question might have an
-			 * invalid meta combination.
-			 */
-			if ((curwp->w_bufp->b_mode & MDMAGIC) == 0)
-				mcclear();
-			else
-				status = mcstr();
-#endif
+			mlenold = matchlen = strlen(apat);
 		}
+#if	MAGIC
+		/* Only make the meta-pattern if in magic mode,
+		 * since the pattern in question might have an
+		 * invalid meta combination.
+		 */
+		if ((curwp->w_bufp->b_mode & MDMAGIC) == 0)
+		{
+			mcclear();
+			rmcclear();
+		}
+		else
+			status = srch? mcstr(): rmcstr();
+#endif
 	}
 	else if (status == FALSE && apat[0] != 0)	/* Old one */
 		status = TRUE;
@@ -652,32 +663,31 @@ int	srch;
 /*
  * savematch -- We found the pattern?  Let's save it away.
  */
-
 savematch()
 {
-	register char *ptr;	/* ptr into malloced last match string */
-	register int j;		/* index */
-	LINE *curline;		/* line of last match */
-	int curoff;		/* offset "      "    */
+	register char	*ptr;		/* pointer to last match string */
+	register int	j;
+	LINE		*curline;	/* line of last match */
+	int		curoff;		/* offset "      "    */
 
-	/* free any existing match string */
+	/* Free any existing match string, then
+	 * attempt to allocate a new one.
+	 */
 	if (patmatch != NULL)
 		free(patmatch);
 
-	/* attempt to allocate a new one */
 	ptr = patmatch = malloc(matchlen + 1);
-	if (ptr == NULL)
-		return;
 
-	/* save the match! */
-	curoff = matchoff;
-	curline = matchline;
+	if (ptr != NULL)
+	{
+		curoff = matchoff;
+		curline = matchline;
 
-	for (j = 0; j < matchlen; j++)
-		*ptr++ = nextch(&curline, &curoff, FORWARD);
+		for (j = 0; j < matchlen; j++)
+			*ptr++ = nextch(&curline, &curoff, FORWARD);
 
-	/* null terminate the match string */
-	*ptr = '\0';
+		*ptr = '\0';
+	}
 }
 
 /*
@@ -700,10 +710,8 @@ register char	*rvstr, *str;
  * sreplace -- Search and replace.
  */
 sreplace(f, n)
-
 int f;		/* default flag */
 int n;		/* # of repetitions wanted */
-
 {
 	return(replaces(FALSE, f, n));
 }
@@ -826,9 +834,9 @@ int	n;	/* # of repetitions wanted */
 			/* Get the query.
 			 */
 pprompt:		mlwrite(&tpat[0], &pat[0], &rpat[0]);
-qprompt:
-			update(TRUE);  /* show the proposed place to change */
-			c = tgetc();			/* and input */
+qprompt:		update(TRUE);  /* show the proposed place to change */
+
+			c = tgetc();
 			mlwrite("");			/* and clear it */
 
 			/* And respond appropriately.
@@ -867,12 +875,13 @@ qprompt:
 					/* Delete the new string.
 					 */
 					backchar(FALSE, rlength);
-					status = delins(rlength, patmatch);
+					status = delins(rlength, patmatch, FALSE);
 					if (status != TRUE)
 						return (status);
 
 					/* Record one less substitution,
-					 * backup, and reprompt.
+					 * backup, save our place, and
+					 * reprompt.
 					 */
 					--numsub;
 					backchar(FALSE, mlenold);
@@ -900,16 +909,18 @@ qprompt:
 
 			}	/* end of switch */
 		}	/* end of "if kind" */
+		else
+			savematch();
 
 		/*
-		 * Delete the sucker, and insert its
-		 * replacement.
+		 * Delete the sucker, and insert its replacement.
 		 */
-		status = delins(matchlen, &rpat[0]);
+		status = delins(matchlen, &rpat[0], TRUE);
 		if (status != TRUE)
 			return (status);
 
-		/* Save where we are if we might undo this....
+		/*
+		 * Save our position, since we may undo this.
 		 */
 		if (kind)
 		{
@@ -920,55 +931,57 @@ qprompt:
 		numsub++;	/* increment # of substitutions */
 	}
 
-	/* And report the results.
-	 */
+	/* Report the results. */
 	mlwrite("%d substitutions", numsub);
 	return(TRUE);
 }
 
 /*
- * delins -- Delete a specified length from the current
- *	point, then insert the string.
+ * delins -- Delete a specified length from the current point
+ *	then either insert the string directly, or make use of
+ *	replacement meta-array.
  */
-delins(dlength, instr)
+delins(dlength, instr, use_meta)
 int	dlength;
 char	*instr;
+int	use_meta;
 {
 	int	status;
-	char	tmpc;
+#if	MAGIC
+	RMC	*rmcptr;
+#endif
 
 	/* Zap what we gotta,
 	 * and insert its replacement.
 	 */
-	if (!(status = ldelete((long) dlength, FALSE)))
-	{
+	if ((status = ldelete((long) dlength, FALSE)) != TRUE)
 		mlwrite("%%ERROR while deleting");
-		return(FALSE);
-	}
 	else
-		while (tmpc = *instr)
-		{
-			status = (tmpc == '\n'? lnewline(): linsert(1, tmpc));
-
-			/* Insertion error?
-			 */
-			if (!status)
-			{
-				mlwrite("%%Out of memory while inserting");
-				break;
+#if	MAGIC
+		if ((rmagical && use_meta) &&
+		     (curwp->w_bufp->b_mode & MDMAGIC) != 0) {
+			rmcptr = &rmcpat[0];
+			while (rmcptr->mc_type != MCNIL && status == TRUE) {
+				if (rmcptr->mc_type == LITCHAR)
+					status = linstr(rmcptr->rstr);
+				else
+					status = linstr(patmatch);
+				rmcptr++;
 			}
-			instr++;
-		}
-	return (status);
+		} else
+#endif
+			status = linstr(instr);
+
+	return(status);
 }
 
 /*
  * expandp -- Expand control key sequences for output.
  */
 expandp(srcstr, deststr, maxlength)
-char *srcstr;	/* string to expand */
-char *deststr;	/* destination of expanded string */
-int maxlength;	/* maximum chars in destination */
+char	*srcstr;	/* string to expand */
+char	*deststr;	/* destination of expanded string */
+int	maxlength;	/* maximum chars in destination */
 {
 	unsigned char c;	/* current char to translate */
 
@@ -1123,10 +1136,8 @@ static int mcstr()
 	mcptr = &mcpat[0];
 	patptr = &pat[0];
 
-	while ((pchr = *patptr) && status)
-	{
-		switch (pchr)
-		{
+	while ((pchr = *patptr) && status)  {
+		switch (pchr)  {
 			case MC_CCL:
 				status = cclmake(&patptr, mcptr);
 				magical = TRUE;
@@ -1176,7 +1187,8 @@ static int mcstr()
 					magical = TRUE;
 				}
 			default:
-litcase:			mcptr->mc_type = LITCHAR;
+			litcase:
+				mcptr->mc_type = LITCHAR;
 				mcptr->u.lchar = pchr;
 				does_closure = (pchr != '\n');
 				break;
@@ -1198,11 +1210,9 @@ litcase:			mcptr->mc_type = LITCHAR;
 	 * freed.  So we stomp a MCNIL value there, and call mcclear()
 	 * to free any other bitmaps.
 	 */
-	if (status)
-	{
+	if (status)  {
 		rtpcm = &tapcm[0];
-		while (--mj >= 0)
-		{
+		while (--mj >= 0)  {
 #if	LATTICE
 			movmem(--mcptr, rtpcm++, sizeof (MC));
 #endif
@@ -1213,8 +1223,7 @@ litcase:			mcptr->mc_type = LITCHAR;
 		}
 		rtpcm->mc_type = MCNIL;
 	}
-	else
-	{
+	else  {
 		(--mcptr)->mc_type = MCNIL;
 		mcclear();
 	}
@@ -1223,7 +1232,105 @@ litcase:			mcptr->mc_type = LITCHAR;
 }
 
 /*
- * mcclear -- Free up any CCL bitmaps, and MCNIL the MC arrays.
+ * rmcstr -- Set up the replacement 'magic' array.  Note that if there
+ *	are no meta-characters encountered in the replacement string,
+ *	the array is never actually created - we will just use the
+ *	character array rpat[] as the replacement string.
+ */
+static int rmcstr()
+{
+	RMC	*rmcptr;
+	char	*patptr;
+	int	status = TRUE;
+	int	mj;
+
+	patptr = &rpat[0];
+	rmcptr = &rmcpat[0];
+	mj = 0;
+	rmagical = FALSE;
+
+	while (*patptr && status == TRUE)
+	{
+		switch (*patptr)
+		{
+			case MC_DITTO:
+
+				/* If there were non-magical characters
+				 * in the string before reaching this
+				 * character, plunk it in the replacement
+				 * array before processing the current
+				 * meta-character.
+				 */
+				if (mj != 0)
+				{
+					rmcptr->mc_type = LITCHAR;
+					if ((rmcptr->rstr = malloc(mj + 1)) == NULL)
+					{
+						mlwrite("%%Out of memory");
+						status = FALSE;
+						break;
+					}
+					strncpy(rmcptr->rstr, patptr - mj, mj);
+					rmcptr++;
+					mj = 0;
+				}
+				rmcptr->mc_type = DITTO;
+				rmcptr++;
+				rmagical = TRUE;
+				break;
+
+			case MC_ESC:
+				rmcptr->mc_type = LITCHAR;
+
+				/* We malloc mj plus two here, instead
+				 * of one, because we have to count the
+				 * current character.
+				 */
+				if ((rmcptr->rstr = malloc(mj + 2)) == NULL)
+				{
+					mlwrite("%%Out of memory");
+					status = FALSE;
+					break;
+				}
+
+				strncpy(rmcptr->rstr, patptr - mj, mj + 1);
+
+				/* If MC_ESC is not the last character
+				 * in the string, find out what it is
+				 * escaping, and overwrite the last
+				 * character with it.
+				 */
+				if (*(patptr + 1) != '\0')
+					*((rmcptr->rstr) + mj) = *++patptr;
+
+				rmcptr++;
+				mj = 0;
+				rmagical = TRUE;
+				break;
+
+			default:
+				mj++;
+		}
+		patptr++;
+	}
+
+	if (rmagical && mj > 0)
+	{
+		rmcptr->mc_type = LITCHAR;
+		if ((rmcptr->rstr = malloc(mj + 1)) == NULL)
+		{
+			mlwrite("%%Out of memory.");
+			status = FALSE;
+		}
+		strncpy(rmcptr->rstr, patptr - mj, mj);
+		rmcptr++;
+	}
+
+	rmcptr->mc_type = MCNIL;
+}
+
+/*
+ * mcclear -- Free up any CCL bitmaps, and MCNIL the MC search arrays.
  */
 mcclear()
 {
@@ -1239,6 +1346,25 @@ mcclear()
 		mcptr++;
 	}
 	mcpat[0].mc_type = tapcm[0].mc_type = MCNIL;
+}
+
+/*
+ * rmcclear -- Free up any strings, and MCNIL the RMC array.
+ */
+rmcclear()
+{
+	register RMC	*rmcptr;
+
+	rmcptr = &rmcpat[0];
+
+	while (rmcptr->mc_type != MCNIL)
+	{
+		if (rmcptr->mc_type == LITCHAR)
+			free(rmcptr->rstr);
+		rmcptr++;
+	}
+
+	rmcpat[0].mc_type = MCNIL;
 }
 
 /*
@@ -1302,19 +1428,18 @@ static int	cclmake(ppatptr, mcptr)
 char	**ppatptr;
 MC	*mcptr;
 {
-	BITMAP		clearbits();
-	BITMAP		bmap;
-	register char	*patptr;
-	register int	pchr, ochr;
+	BITMAP			clearbits();
+	BITMAP			bmap;
+	register unsigned char	*patptr;
+	register int		pchr, ochr;
 
-	if ((bmap = clearbits()) == NULL)
-	{
+	if ((bmap = clearbits()) == NULL)  {
 		mlwrite("%%Out of memory");
 		return FALSE;
 	}
 
 	mcptr->u.cclmap = bmap;
-	patptr = *ppatptr;
+	patptr = (unsigned char *) *ppatptr;
 
 	/*
 	 * Test the initial character(s) in ccl for
@@ -1322,21 +1447,18 @@ MC	*mcptr;
 	 * character as a first character.  Anything
 	 * else gets set in the bitmap.
 	 */
-	if (*++patptr == MC_NCCL)
-	{
+	if (*++patptr == MC_NCCL)  {
 		patptr++;
 		mcptr->mc_type = NCCL;
 	}
 	else
 		mcptr->mc_type = CCL;
 
-	if ((ochr = *patptr) == MC_ECCL)
-	{
+	if ((ochr = *patptr) == MC_ECCL)  {
 		mlwrite("%%No characters in character class");
 		return (FALSE);
 	}
-	else
-	{
+	else  {
 		if (ochr == MC_ESC)
 			ochr = *++patptr;
 
@@ -1344,10 +1466,8 @@ MC	*mcptr;
 		patptr++;
 	}
 
-	while (ochr != '\0' && (pchr = *patptr) != MC_ECCL)
-	{
-		switch (pchr)
-		{
+	while (ochr != '\0' && (pchr = *patptr) != MC_ECCL)  {
+		switch (pchr)  {
 			/* Range character loses its meaning
 			 * if it is the last character in
 			 * the class.
@@ -1375,7 +1495,7 @@ MC	*mcptr;
 		ochr = pchr;
 	}
 
-	*ppatptr = patptr;
+	*ppatptr = (char *) patptr;
 
 	if (ochr == '\0')
 	{
@@ -1396,6 +1516,7 @@ BITMAP	cclmap;
 	if (bc >= HICHAR)
 		return FALSE;
 
+	bc &= 255;
 	return( (*(cclmap + (bc >> 3)) & BIT(bc & 7))? TRUE: FALSE );
 }
 
@@ -1423,8 +1544,9 @@ static void setbit(bc, cclmap)
 int	bc;
 BITMAP	cclmap;
 {
-	if (bc < HICHAR)
+	if (bc < HICHAR)  {
+		bc &= 255;
 		*(cclmap + (bc >> 3)) |= BIT(bc & 7);
+	}
 }
 #endif
-

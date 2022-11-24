@@ -33,6 +33,7 @@ extern  int     gotoeob();              /* Move to end of buffer        */
 extern  int     setfillcol();           /* Set fill column.             */
 extern  int     setmark();              /* Set mark                     */
 extern  int     swapmark();             /* Swap "." and mark            */
+extern	int	resetmark();		/* reset current buffer's mark	*/
 extern  int     forwsearch();           /* Search forward               */
 extern  int     backsearch();           /* Search backwards             */
 extern	int	sreplace();		/* search and replace		*/
@@ -80,7 +81,7 @@ extern	int	bktoshell();		/* suspend emacs to parent shell*/
 extern	int	rtfrmshell();		/* return from a suspended state*/
 #endif
 extern  int     quickexit();            /* low keystroke style exit.    */
-extern	int	setmode();		/* set an editor mode		*/
+extern	int	addmode();		/* set an editor mode		*/
 extern	int	delmode();		/* delete a mode		*/
 extern	int	gotoline();		/* go to a numbered line	*/
 extern	int	namebuffer();		/* rename the current buffer	*/
@@ -106,7 +107,7 @@ extern	int	nextbuffer();		/* switch to the next buffer	*/
 #if	WORDPRO
 extern	int	killpara();		/* kill the current paragraph	*/
 #endif
-extern	int	setgmode();		/* set a global mode		*/
+extern	int	addgmode();		/* set a global mode		*/
 extern	int	delgmode();		/* delete a global mode		*/
 extern	int	insspace();		/* insert a space forword	*/
 extern	int	forwhunt();		/* hunt forward for next match	*/
@@ -199,18 +200,20 @@ extern	int	storeproc();		/* store names procedure */
 extern	int	execproc();		/* execute procedure */
 #endif
 extern	int	nullproc();		/* does nothing... */
+extern	int	ovstring();		/* overwrite a string */
+extern	int	execprg();		/* execute a program */
 
 /*	Name to function binding table
 
-		This table gives the names of all the bindable functions
-	end their C function address. These are used for the bind-to-key
+	This table gives the names of all the bindable functions
+	and their C function address. These are used for the bind-to-key
 	function.
 */
 
 NBIND	names[] = {
 	{"abort-command",		ctrlg},
-	{"add-mode",			setmode},
-	{"add-global-mode",		setgmode},
+	{"add-mode",			addmode},
+	{"add-global-mode",		addgmode},
 #if	APROP
 	{"apropos",			apro},
 #endif
@@ -305,6 +308,7 @@ NBIND	names[] = {
 #if	PROC
 	{"execute-procedure",		execproc},
 #endif
+	{"execute-program",		execprg},
 	{"exit-emacs",			quit},
 #if	WORDPRO
 	{"fill-paragraph",		fillpara},
@@ -353,6 +357,7 @@ NBIND	names[] = {
 	{"next-word",			forwword},
 	{"nop",				nullproc},
 	{"open-line",			openline},
+	{"overwrite-string",		ovstring},
 	{"pipe-command",		pipecmd},
 	{"previous-line",		backline},
 	{"previous-page",		backpage},
@@ -366,6 +371,7 @@ NBIND	names[] = {
 	{"quote-character",		quote},
 	{"read-file",			fileread},
 	{"redraw-display",		reposition},
+	{"reset-mark",			resetmark},
 	{"resize-window",		resize},
 	{"restore-window",		restwnd},
 	{"replace-string",		sreplace},

@@ -74,9 +74,9 @@ int c;
 
 {
 	if (c & CTRL)
-		c = c & ~(CTRL | 0x40);
+		c &= ~(CTRL | '@');
 	if (c & SPEC)
-		c= c & 255;
+		c &= 255;
 	return(c);
 }
 
@@ -88,9 +88,9 @@ ctoec(c)
 int c;
 
 {
-        if (c>=0x00 && c<=0x1F)
-                c = CTRL | (c+'@');
-        return (c);
+	if (c>=0x00 && c<=0x1F)
+		c |= CTRL | '@';
+	return (c);
 }
  
 /* get a command name from the command line. Command completion means
@@ -242,7 +242,7 @@ int tgetc()
 		if (kbdptr < kbdend)
 			return((int)*kbdptr++);
 
-		/* at the end of last repitition? */
+		/* at the end of last repetition? */
 		if (--kbdrep < 1) {
 			kbdmode = STOP;
 #if	VISMAC == 0
@@ -292,13 +292,14 @@ get1key()
 #endif
 
 	/* get a keystroke */
-        c = tgetc();
+	c = tgetc();
+
 
 #if	MSDOS | ST520
 	if (c == 0) {				/* Apply SPEC prefix	*/
-	        c = tgetc();
-	        if (c>=0x00 && c<=0x1F)		/* control key? */
-        	        c = CTRL | (c+'@');
+		c = tgetc();
+		if (c>=0x00 && c<=0x1F)		/* control key? */
+			c = CTRL | (c+'@');
 		return(SPEC | c);
 	}
 #endif
@@ -327,15 +328,16 @@ get1key()
 #endif
 
 #if  WANGPC
-	if (c == 0x1F) {			/* Apply SPEC prefix    */
-	        c = tgetc();
+	if (c == 0x1F) {			/* Apply SPEC prefix	*/
+		c = tgetc();
 		return(SPEC | c);
 	}
 #endif
 
-        if (c>=0x00 && c<=0x1F)                 /* C0 control -> C-     */
-                c = CTRL | (c+'@');
-        return (c);
+	if (c>=0x00 && c<=0x1F) 		/* C0 control -> C-	*/
+		c = CTRL | (c+'@');
+
+	return (c);
 }
 
 /*	GETCMD:	Get a command from the keyboard. Process all applicable
@@ -346,32 +348,65 @@ getcmd()
 {
 	int c;		/* fetched keystroke */
 
+#if SUN
+	int knr;
+#endif
+
 	/* get initial character */
 	c = get1key();
 
 	/* process META prefix */
-	if (c == metac) {
+#if	VT100
+	/* if ESC must be recognized.... change this to a 1 */
+	if (c == metac || c == (CTRL | '[')) {
 		c = get1key();
-	        if (islower(c))		/* Force to upper */
-        	        c ^= DIFCASE;
-	        if (c>=0x00 && c<=0x1F)		/* control key */
-	        	c = CTRL | (c+'@');
-#if	1	/* temporary ESC sequence fix......... */
-		if (c == '[') {
+		if (islower(c))		/* Force to upper */
+			c ^= DIFCASE;
+		if (c == '[' || c == 'O') {
 			c = get1key();
 			return(SPEC | c);
 		}
-#endif
 		return(META | c);
 	}
+#else
+#if SUN
+	/* if ESC must be recognized.... change this to a 1 */
+	if (c == metac || c == (CTRL | '[')) {
+		c = get1key();
+		if (c != '[')
+		{
+			if (islower(c))		/* Force to upper */
+				c ^= DIFCASE;
+			return(META | c);
+		}
+		
+		c = get1key();
+		knr = (c - '0');
+		while (('0' <= c) && (c <= '9'))
+		{
+			knr = 10*knr + (c - '0');
+			c = get1key();
+		}
+
+		return(SPEC | (knr - 127));
+	}
+
+#else
+	if (c == metac) {
+		c = get1key();
+		if (islower(c))		/* Force to upper */
+			c ^= DIFCASE;
+		return(META | c);
+	}
+#endif
+#endif
+
 
 	/* process CTLX prefix */
 	if (c == ctlxc) {
 		c = get1key();
-	        if (c>='a' && c<='z')		/* Force to upper */
-        	        c -= 0x20;
-	        if (c>=0x00 && c<=0x1F)		/* control key */
-	        	c = CTRL | (c+'@');
+		if (islower(c))		/* Force to upper */
+			c ^= DIFCASE;
 		return(CTLX | c);
 	}
 
@@ -380,9 +415,9 @@ getcmd()
 }
 
 /*	A more generalized prompt/reply function allowing the caller
-	to specify the proper terminator. If the terminator is not
-	a return ('\n') it will echo as "<NL>"
-							*/
+ *	to specify the proper terminator. If the terminator is not
+ *	a return ('\n') it will echo as "<NL>"
+ */
 getstring(prompt, buf, nbuf, eolchar)
 
 char *prompt;
@@ -437,7 +472,7 @@ int eolchar;
 				outstring("\b \b");
 				--ttcol;
 
-				if (buf[--cpos] < 0x20) {
+				if ((unsigned char)buf[--cpos] < 0x20) {
 					outstring("\b \b");
 					--ttcol;
 				}
@@ -455,7 +490,7 @@ int eolchar;
 				outstring("\b \b");
 				--ttcol;
 
-				if (buf[--cpos] < 0x20) {
+				if ((unsigned char)buf[--cpos] < 0x20) {
 					outstring("\b \b");
 					--ttcol;
 				}

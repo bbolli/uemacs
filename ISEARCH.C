@@ -1,7 +1,7 @@
 /*
  * The functions in this file implement commands that perform incremental
  * searches in the forward and backward directions.  This "ISearch" command
- * is intended to emulate the same command from the original EMACS 
+ * is intended to emulate the same command from the original EMACS
  * implementation (ITS).  Contains references to routines internal to
  * SEARCH.C.
  *
@@ -500,7 +500,8 @@ int	c;
     term.t_getchar = uneat;		/* Replace it with ours		      */
 }
 #else
-isearch()
+no_isearch()
 {
 }
 #endif
+

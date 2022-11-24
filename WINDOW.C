@@ -190,7 +190,7 @@ mvupwind(f, n)
  * This command makes the current window the only window on the screen. Bound
  * to "C-X 1". Try to set the framing so that "." does not have to move on the
  * display. Some care has to be taken to keep the values of dot and mark in
- * the buffer structures right if the distruction of a window makes a buffer
+ * the buffer structures right if the destruction of a window makes a buffer
  * become undisplayed.
  */
 onlywind(f, n)
@@ -264,7 +264,7 @@ int f, n;	/* arguments are ignored for this command */
 		wp = wp->w_wndp;
 	}
 
-	/* find recieving window and give up our space */
+	/* find receiving window and give up our space */
 	wp = wheadp;
 	if (curwp->w_toprow == 0) {
 		/* find the next window down */
@@ -520,8 +520,7 @@ int f, n;	/* default flag and numeric argument */
  * Pick the uppermost window that isn't the current window. An LRU algorithm
  * might be better. Return a pointer, or NULL on error.
  */
-WINDOW  *
-wpopup()
+WINDOW  *wpopup()
 {
         register WINDOW *wp;
 
@@ -535,7 +534,6 @@ wpopup()
 }
 
 scrnextup(f, n)		/* scroll the next window up (back) a page */
-
 {
 	nextwind(FALSE, 1);
 	backpage(f, n);
@@ -543,7 +541,6 @@ scrnextup(f, n)		/* scroll the next window up (back) a page */
 }
 
 scrnextdw(f, n)		/* scroll the next window down (forward) a page */
-
 {
 	nextwind(FALSE, 1);
 	forwpage(f, n);
@@ -551,14 +548,12 @@ scrnextdw(f, n)		/* scroll the next window down (forward) a page */
 }
 
 savewnd(f, n)		/* save ptr to current window */
-
 {
 	swindow = curwp;
 	return(TRUE);
 }
 
 restwnd(f, n)		/* restore the saved screen */
-
 {
 	register WINDOW *wp;
 
@@ -579,10 +574,8 @@ restwnd(f, n)		/* restore the saved screen */
 }
 
 newsize(f, n)	/* resize the screen, re-writing the screen */
-
 int f;	/* default flag */
 int n;	/* numeric argument */
-
 {
 	WINDOW *wp;	/* current window being examined */
 	WINDOW *nextwp;	/* next window to scan */
@@ -601,6 +594,7 @@ int n;	/* numeric argument */
 
 	if (term.t_nrow == n - 1)
 		return(TRUE);
+
 	else if (term.t_nrow < n - 1) {
 
 		/* go to the last window */
@@ -634,9 +628,10 @@ int n;	/* numeric argument */
 				}
 	
 				/* update curwp and lastwp if needed */
-				if (wp == curwp)
+				if (wp == curwp) {
 					curwp = wheadp;
 					curbp = curwp->w_bufp;
+				}
 				if (lastwp != NULL)
 					lastwp->w_wndp = NULL;
 
@@ -664,10 +659,8 @@ int n;	/* numeric argument */
 }
 
 newwidth(f, n)	/* resize the screen, re-writing the screen */
-
 int f;	/* default flag */
 int n;	/* numeric argument */
-
 {
 	register WINDOW *wp;
 
@@ -686,7 +679,7 @@ int n;	/* numeric argument */
 	term.t_margin = n / 10;
 	term.t_scrsiz = n - (term.t_margin * 2);
 
-	/* florce all windows to redraw */
+	/* force all windows to redraw */
 	wp = wheadp;
 	while (wp) {
 		wp->w_flag |= WFHARD | WFMOVE | WFMODE;
@@ -698,10 +691,9 @@ int n;	/* numeric argument */
 }
 
 int getwpos()	/* get screen offset of current line in current window */
-
 {
 	register int sline;	/* screen line from top of window */
-	register LINE *lp;	/* scannile line pointer */
+	register LINE *lp;	/* scan line pointer */
 
 	/* search down the line we want */
 	lp = curwp->w_linep;

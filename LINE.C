@@ -117,12 +117,35 @@ register int	flag;
 }
 
 insspace(f, n)	/* insert spaces forward into text */
-
 int f, n;	/* default flag and numeric argument */
 
 {
 	linsert(n, ' ');
 	backchar(f, n);
+}
+
+/*
+ * linstr -- Insert a string at the current point
+ */
+
+linstr(instr)
+char	*instr;
+{
+	register int status = TRUE;
+	char tmpc;
+
+	if (instr != NULL)
+		while ((tmpc = *instr) && status == TRUE) {
+			status = (tmpc == '\n'? lnewline(): linsert(1, tmpc));
+
+			/* Insertion error? */
+			if (status != TRUE) {
+				mlwrite("%%Out of memory while inserting");
+				break;
+			}
+			instr++;
+		}
+	return(status);
 }
 
 /*
@@ -134,6 +157,7 @@ int f, n;	/* default flag and numeric argument */
  * greater than the place where you did the insert. Return TRUE if all is
  * well, and FALSE on errors.
  */
+
 linsert(n, c)
 {
 	register char	*cp1;
@@ -161,6 +185,7 @@ linsert(n, c)
 		lp2->l_fp = lp1;
 		lp1->l_bp = lp2;
 		lp2->l_bp = lp3;
+		lp2->l_mode = ( curbp->b_mode & MDBINARY ) ? LMEOF : LMEOL;
 		for (i=0; i<n; ++i)
 			lp2->l_text[i] = c;
 		curwp->w_dotp = lp2;
@@ -182,6 +207,7 @@ linsert(n, c)
 		lp2->l_fp = lp1->l_fp;
 		lp1->l_fp->l_bp = lp2;
 		lp2->l_bp = lp1->l_bp;
+		lp2->l_mode = lp1->l_mode;
 		free((char *) lp1);
 	} else {				/* Easy: in place	*/
 		lp2 = lp1;			/* Pretend new line	*/
@@ -193,7 +219,8 @@ linsert(n, c)
 	}
 	for (i=0; i<n; ++i)			/* Add the characters	*/
 		lp2->l_text[doto+i] = c;
-	wp = wheadp;				/* Update windows	*/
+
+	wp = wheadp;				/* Update the windows	*/
 	while (wp != NULL) {
 		if (wp->w_linep == lp1)
 			wp->w_linep = lp2;
@@ -213,11 +240,54 @@ linsert(n, c)
 }
 
 /*
+ * Overwrite a character into the current line at the current position
+ *
+ */
+
+lowrite(c)
+
+char c;		/* character to overwrite on current position */
+
+{
+	if (curwp->w_doto < curwp->w_dotp->l_used &&
+		(lgetc(curwp->w_dotp, curwp->w_doto) != '\t' ||
+		 (curwp->w_doto) % 8 == 7))
+			ldelete(1L, FALSE);
+	return(linsert(1, c));
+}
+
+/*
+ * lover -- Overwrite a string at the current point
+ */
+
+lover(ostr)
+
+char	*ostr;
+
+{
+	register int status = TRUE;
+	char tmpc;
+
+	if (ostr != NULL)
+		while ((tmpc = *ostr) && status == TRUE) {
+			status = (tmpc == '\n'? lnewline(): lowrite(tmpc));
+
+			/* Insertion error? */
+			if (status != TRUE) {
+				mlwrite("%%Out of memory while overwriting");
+				break;
+			}
+			ostr++;
+		}
+	return(status);
+}
+
+/*
  * Insert a newline into the buffer at the current location of dot in the
  * current window. The funny ass-backwards way it does things is not a botch;
  * it just makes the last line in the file not a special case. Return TRUE if
  * everything works out and FALSE on error (memory allocation failure). The
- * update of dot and mark is a bit easier then in the above case, because the
+ * update of dot and mark is a bit easier than in the above case, because the
  * split forces more updating.
  */
 lnewline()
@@ -248,6 +318,7 @@ lnewline()
 	lp1->l_bp = lp2;
 	lp2->l_bp->l_fp = lp2;
 	lp2->l_fp = lp1;
+	lp2->l_mode = LMEOL;
 	wp = wheadp;				/* Windows		*/
 	while (wp != NULL) {
 		if (wp->w_linep == lp1)
@@ -297,7 +368,7 @@ int kflag;	/* put killed text in kill buffer flag */
 			return (FALSE);
 		chunk = dotp->l_used-doto;	/* Size of chunk.	*/
 		if (chunk > n)
-			chunk = n;
+			chunk = (int) n;
 		if (chunk == 0) {		/* End of line, merge.	*/
 			lchange(WFHARD);
 			if (ldelnewline() == FALSE
@@ -382,16 +453,8 @@ char *iline;	/* contents of new line */
 		return(status);
 
 	/* insert the new line */
-	while (*iline) {
-		if (*iline == '\n') {
-			if (lnewline() != TRUE)
-				return(FALSE);
-		} else {
-			if (linsert(1, *iline) != TRUE)
-				return(FALSE);
-		}
-		++iline;
-	}
+	if ((status = linstr(iline)) != TRUE)
+		return(status);
 	status = lnewline();
 	backline(TRUE, 1);
 	return(status);
@@ -422,12 +485,14 @@ ldelnewline()
 	if (lp2 == curbp->b_linep) {		/* At the buffer end.	*/
 		if (lp1->l_used == 0)		/* Blank line.		*/
 			lfree(lp1);
-		return (TRUE);
+		else
+			lp1->l_mode = LMEOF;	/* EOL becomes EOF	*/
+		return TRUE;
 	}
-	if (lp2->l_used <= lp1->l_size-lp1->l_used) {
-		cp1 = &lp1->l_text[lp1->l_used];
-		cp2 = &lp2->l_text[0];
-		while (cp2 != &lp2->l_text[lp2->l_used])
+	if (lp2->l_used <= lp1->l_size - lp1->l_used) {
+		cp1 = &lp1->l_text[ lp1->l_used ];
+		cp2 = &lp2->l_text[ 0 ];
+		while (cp2 != &lp2->l_text[ lp2->l_used ])
 			*cp1++ = *cp2++;
 		wp = wheadp;
 		while (wp != NULL) {
@@ -446,11 +511,12 @@ ldelnewline()
 		lp1->l_used += lp2->l_used;
 		lp1->l_fp = lp2->l_fp;
 		lp2->l_fp->l_bp = lp1;
+		lp1->l_mode = lp2->l_mode;
 		free((char *) lp2);
-		return (TRUE);
+		return TRUE;
 	}
-	if ((lp3=lalloc(lp1->l_used+lp2->l_used)) == NULL)
-		return (FALSE);
+	if ((lp3=lalloc(lp1->l_used + lp2->l_used)) == NULL)
+		return FALSE;
 	cp1 = &lp1->l_text[0];
 	cp2 = &lp3->l_text[0];
 	while (cp1 != &lp1->l_text[lp1->l_used])
@@ -462,6 +528,7 @@ ldelnewline()
 	lp3->l_fp = lp2->l_fp;
 	lp2->l_fp->l_bp = lp3;
 	lp3->l_bp = lp1->l_bp;
+	lp3->l_mode = lp2->l_mode;
 	wp = wheadp;
 	while (wp != NULL) {
 		if (wp->w_linep==lp1 || wp->w_linep==lp2)
@@ -482,7 +549,7 @@ ldelnewline()
 	}
 	free((char *) lp1);
 	free((char *) lp2);
-	return (TRUE);
+	return TRUE;
 }
 
 /*
@@ -564,10 +631,7 @@ yank(f, n)
 	while (n--) {
 		kp = kbufh;
 		while (kp != NULL) {
-			if (kp->d_next == NULL)
-				i = kused;
-			else
-				i = KBLOCK;
+			i = (kp->d_next == NULL) ? kused : KBLOCK;
 			sp = kp->d_chunk;
 			while (i--) {
 				if ((c = *sp++) == '\n') {
@@ -583,3 +647,4 @@ yank(f, n)
 	}
 	return (TRUE);
 }
+

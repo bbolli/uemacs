@@ -14,7 +14,7 @@ namedcmd(f, n)
 int f, n;	/* command arguments [passed through to command executed] */
 
 {
-	register (*kfunc)();	/* ptr to the requexted function to bind to */
+	register int (*kfunc)(); /* ptr to the requexted function to bind to */
 	int (*getname())();
 
 	/* prompt the user to type a named command */
@@ -68,7 +68,6 @@ char *cline;	/* command line to execute */
 {
 	register int f;		/* default argument flag */
 	register int n;		/* numeric repeat value */
-	register int i;
 	int (*fnc)();		/* function to execute */
 	int status;		/* return status of function */
 	int oldcle;		/* old contents of clexec flag */
@@ -128,12 +127,14 @@ char *cline;	/* command line to execute */
 		return a pointer past the token
 */
 
-char *token(src, tok)
+char *token(src, tok, size)
 
 char *src, *tok;	/* source string, destination token string */
+int size;		/* maximum size of token */
 
 {
 	register int quotef;	/* is the current string quoted? */
+	register char c;	/* temporary character */
 
 	/* first scan past any whitespace in the source string */
 	while (*src == ' ' || *src == '\t')
@@ -148,12 +149,18 @@ char *src, *tok;	/* source string, destination token string */
 			if (*src == 0)
 				break;
 			switch (*src++) {
-				case 'r':	*tok++ = 13; break;
-				case 'n':	*tok++ = 10; break;
-				case 't':	*tok++ = 9;  break;
-				case 'b':	*tok++ = 8;  break;
-				case 'f':	*tok++ = 12; break;
-				default:	*tok++ = *(src-1);
+				case 'a':	c = 7;  break;	/* BEL */
+				case 'b':	c = 8;  break;	/* BS */
+				case 't':	c = 9;  break;	/* TAB */
+				case 'n':	c = 10; break;	/* LF */
+				case 'v':	c = 11; break;	/* VT */
+				case 'f':	c = 12; break;	/* FF */
+				case 'r':	c = 13; break;	/* CR */
+				case 'e':	c = 27; break;	/* ESC */
+				default:	c = src[-1];
+			}
+			if (--size > 0) {
+				*tok++ = c;
 			}
 		} else {
 			/* check for the end of the token */
@@ -165,12 +172,14 @@ char *src, *tok;	/* source string, destination token string */
 					break;
 			}
 
-			/* set quote mode if qoute found */
+			/* set quote mode if quote found */
 			if (*src == '"')
 				quotef = TRUE;
 
 			/* record the character */
-			*tok++ = *src++;
+			c = *src++;
+			if (--size > 0)
+				*tok++ = c;
 		}
 	}
 
@@ -202,7 +211,7 @@ nextarg(prompt, buffer, size, terminator)
 
 char *prompt;		/* prompt to use if we must be interactive */
 char *buffer;		/* buffer to put token into */
-char *size;		/* size of the buffer */
+int size;		/* size of the buffer */
 int terminator;		/* terminating char to be used on interactive fetch */
 
 {
@@ -211,7 +220,7 @@ int terminator;		/* terminating char to be used on interactive fetch */
 		return(getstring(prompt, buffer, size, terminator));
 
 	/* grab token and advance past */
-	execstr = token(execstr, buffer);
+	execstr = token(execstr, buffer, size);
 
 	/* evaluate it */
 	strcpy(buffer, getval(buffer));
@@ -276,7 +285,7 @@ int n;		/* macro number to use */
 	register int status;		/* return status */
 	char bname[NBUFN];		/* name of buffer to use */
 
-	/* a numeric argument means its a numbered macro */
+	/* a numeric argument means it is a numbered macro */
 	if (f == TRUE)
 		return(storemac(f, n));
 
@@ -397,6 +406,7 @@ BUFFER *bp;	/* buffer to execute */
 	int dirnum;		/* directive index */
 	int linlen;		/* length of line to execute */
 	int i;			/* index */
+	int c;			/* temp character */
 	int force;		/* force TRUE result? */
 	WINDOW *wp;		/* ptr to windows to scan */
 	WHBLOCK *whlist;	/* ptr to !WHILE list */
@@ -560,11 +570,14 @@ nxtscan:	/* on to the next line */
 			update(TRUE);
 	
 			/* and get the keystroke */
-			if (get1key() == abortc) {
+			if ((c = get1key()) == abortc) {
 				mlforce("[Macro aborted]");
 				freewhile(whlist);
 				return(FALSE);
 			}
+
+			if (c == metac)
+				macbug = FALSE;
 		}
 #endif
 
@@ -620,7 +633,7 @@ nxtscan:	/* on to the next line */
 
 		force = FALSE;
 
-		/* dump comments */
+		/* dump labels */
 		if (*eline == '*')
 			goto onward;
 
@@ -693,7 +706,7 @@ nxtscan:	/* on to the next line */
 				if (execlevel == 0) {
 
 					/* grab label to jump to */
-					eline = token(eline, golabel);
+					eline = token(eline, golabel, NPAT);
 					linlen = strlen(golabel);
 					glp = hlp->l_fp;
 					while (glp != hlp) {
@@ -840,6 +853,7 @@ char *fname;	/* file name to execute */
 	char bname[NBUFN];	/* name of buffer */
 
 	makename(bname, fname);		/* derive the name of the buffer */
+	unqname(bname);			/* make sure we don't stomp things */
 	if ((bp = bfind(bname, TRUE, 0)) == NULL) /* get the needed buffer */
 		return(FALSE);
 
@@ -1131,5 +1145,3 @@ cbuf40(f, n)
 {
 	cbuf(f, n, 40);
 }
-
-
