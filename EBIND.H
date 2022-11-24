@@ -9,6 +9,7 @@
  * control-X commands.
  */
 KEYTAB	keytab[NBINDS] = {
+#if 0	/* no default key bindings for now (dWARE/bb) */
 	{CTRL|'A',		gotobol},
 	{CTRL|'B',		backchar},
 	{CTRL|'C',		insspace},
@@ -332,11 +333,15 @@ KEYTAB	keytab[NBINDS] = {
 #endif	WANGPC
 
 	{0x7F,			backdel},
+#else
+	CTRL|'M',		execfile,	/* just for safety */
+#endif	0
 
 	/* special internal bindings */
 	SPEC|META|'W',		wrapword,	/* called on word wrap */
 	SPEC|META|'C',		nullproc,	/*  every command input */
 	SPEC|META|'R',		nullproc,	/*  on file read */
+	SPEC|META|'S',		nullproc,	/*  on select-buffer */
 	{0,			NULL}
 };
 

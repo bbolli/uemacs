@@ -555,35 +555,33 @@ char *seq;	/* destination string for sequence */
 	ptr = seq;
 
 	/* apply meta sequence if needed */
-	if (c & META) {
-		*ptr++ = 'M';
-		*ptr++ = '-';
-	}
+	if (c & META)
+		*ptr++ = 'M',  *ptr++ = '-';
 
 	/* apply ^X sequence if needed */
-	if (c & CTLX) {
-		*ptr++ = '^';
-		*ptr++ = 'X';
-	}
+	if (c & CTLX)
+		*ptr++ = '^',  *ptr++ = 'X';
 
 	/* apply SPEC sequence if needed */
-	if (c & SPEC) {
-		*ptr++ = 'F';
-		*ptr++ = 'N';
-	}
+	if (c & SPEC)
+		*ptr++ = 'F',  *ptr++ = 'N';
 
 	/* apply control sequence if needed */
-	if (c & CTRL) {
+	if (c & CTRL)
 		*ptr++ = '^';
-	}
 
-	c = c & 255;	/* strip the prefixes */
+	c &= 255;	/* strip the prefixes */
 
 	/* and output the final sequence */
 
-	*ptr++ = c;
+	if ( c == 127 )
+		*ptr++ = '^',  *ptr++ = '?';
+	else
+		*ptr++ = c;
+
 	*ptr = 0;	/* terminate the string */
 }
+
 
 /*	This function looks a key binding up in the binding table	*/
 
@@ -662,50 +660,48 @@ unsigned char *keyname;     /* name of key to translate to Command key form */
 		keyname += 2;
 	}
 
-	/* next the function prefix */
+	/* next control-x */
+	if (*keyname == '^' && *(keyname+1) == 'X' && *(keyname+2) != 0) {
+		c |= CTLX;
+		keyname += 2;
+	}
+
+	/* the function prefix as well... */
 	if (*keyname == 'F' && *(keyname+1) == 'N') {
 		c |= SPEC;
 		keyname += 2;
 	}
 
-	/* control-x as well... (but not with FN) */
-	if (*keyname == '^' && *(keyname+1) == 'X'&& !(c & SPEC)) {
-		c |= CTLX;
-		keyname += 2;
-	}
-
 	/* a control char? */
 	if (*keyname == '^' && *(keyname+1) != 0) {
+		if (*(keyname+1) == '?')	/* check for ^? (DEL) */
+			return c | 0x7F;
 		c |= CTRL;
 		++keyname;
 	}
 	if (*keyname < 32) {
 		c |= CTRL;
-		*keyname += 'A';
+		*keyname += '@';
 	}
 
-
-	/* make sure we are not lower case (not with function keys)*/
-	if (*keyname >= 'a' && *keyname <= 'z' && !(*keyname & SPEC))
-		*keyname -= 32;
+	/* make sure we are not lower case (not with function keys) */
+	if ( !(c & SPEC) && islower(*keyname))
+		*keyname ^= DIFCASE;
 
 	/* the final sequence... */
-	c |= *keyname;
-	return(c);
+	return c | *keyname;
 }
 
-char *transbind(skey)	/* string key name to binding name.... */
 
-char *skey;	/* name of keey to get binding for */
+char *transbind(skey)	/* string key name to binding name.... */
+char *skey;		/* name of key to get binding for */
 
 {
 	char *bindname;
 	unsigned int stock();
 	int (*getbind())();
 
-	bindname = getfname(getbind(stock(skey)));
-	if (bindname == NULL)
-		bindname = "ERROR";
+	bindname = getfname( getbind( stock( skey ) ) );
 
-	return(bindname);
+	return ( bindname == NULL ) ? errorm : bindname;
 }

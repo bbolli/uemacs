@@ -57,6 +57,8 @@ char *envars[] = {
 	"line",			/* text of current line */
 	"gflags",		/* global internal emacs flags */
 	"rval",			/* child process return value */
+	"bufcnt",		/* count of visible buffers */
+	"cheight",		/* current height of cursor */
 };
 
 #define	NEVARS	sizeof(envars) / sizeof(char *)
@@ -100,6 +102,8 @@ char *envars[] = {
 #define	EVLINE		34
 #define	EVGFLAGS	35
 #define	EVRVAL		36
+#define EVBUFCNT	37
+#define EVCHEIGHT	38
 
 /*	list of recognized user functions	*/
 
@@ -153,6 +157,7 @@ UFUNC funcs[] = {
  	"bxo", DYNAMIC,		/* bitwise xor	 9-10-87  jwm */
 	"bno", MONAMIC,		/* bitwise not */
 	"xla", TRINAMIC,	/* XLATE character string translation */
+	"tri", MONAMIC,		/* trim leading and trailing whitespace */
 };
 
 #define	NFUNCS	sizeof(funcs) / sizeof(UFUNC)
@@ -198,3 +203,4 @@ UFUNC funcs[] = {
 #define UFBXOR		36
 #define	UFBNOT		37
 #define	UFXLATE		38
+#define	UFTRIM		39

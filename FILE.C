@@ -182,7 +182,12 @@ int lockfl;		/* check the file for locks? */
 	curwp->w_bufp = bp;
 	curbp->b_nwnd++;
 
-	return readin(fname, lockfl);		/* Read it in.		*/
+	s = readin(fname, lockfl);		/* Read it in.		*/
+
+	/* let a user macro get hold of things... if he wants to */
+	if (s == TRUE)
+		execute(META|SPEC|'S', FALSE, 1);
+	return s;
 }
 
 /*

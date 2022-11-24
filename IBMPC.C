@@ -31,7 +31,9 @@
 
 #define CDCGA	0			/* color graphics card		*/
 #define CDMONO	1			/* monochrome text card 	*/
-#define CDEGA   2			/* EGA/VGA color 		*/
+#define CDVGA28 2			/* VGA adapter 28 rows		*/
+#define CDEGA35 3			/* EGA/VGA color adapter 35/40 rows	*/
+#define CDEGA43 4			/* EGA/VGA color adapter 43/50 rows	*/
 #define CDSENSE 9			/* detect the card type 	*/
 
 #define NDRIVE	5			/* number of screen drivers	*/
@@ -41,12 +43,13 @@
 int oldtype = -1;			/* display type before initializetion */
 int dtype = -1; 			/* current display type 	*/
 char drvname[][8] = {			/* screen resolution names	*/
-	"CGA", "MONO", "EGA"
+	"CGA", "MONO", "VGA28", "EGA35", "EGA43"
 };
 long scadd;				/* address of screen ram	*/
 int *scptr[NROW];			/* pointer to screen lines	*/
 unsigned int sline[NCOL];		/* screen line image		*/
 int egaexist = FALSE;			/* is an EGA card available?	*/
+int cheight = 2;			// cursor height
 extern union REGS rg;			/* cpu register for use of DOS calls */
 
 extern	int	ttopen();		/* Forward references.		*/
@@ -92,7 +95,11 @@ TERM	term	= {
 	ibmclose,
 	ibmkopen,
 	ibmkclose,
+#if	MSC | TURBO
+	ibmgetc,
+#else
 	ttgetc,
+#endif
 	ibmputc,
 	ttflush,
 	ibmmove,
@@ -106,6 +113,32 @@ TERM	term	= {
 	ibmbcol
 #endif
 };
+
+void flickwait()  {
+
+	if ( dtype == CDCGA )  {
+		/* wait for vertical retrace to be off */
+		while ( inp( 0x3DA ) & 8 )
+			;
+		/* and to be back on */
+		while ( !( inp( 0x3DA ) & 8 ) )
+			;
+	}
+}
+
+void intr( intno )  {
+
+	static union REGS *rgp = &rg;
+
+	int86( intno, rgp, rgp );
+}
+
+void intv()  {  intr( 0x10 );  }
+
+void intk()  {  intr( 0x16 );  }
+
+void intd()  {  intr( 0x21 );  }
+
 
 #if	COLOR
 ibmfcol(color)		/* set the current output color */
@@ -127,7 +160,7 @@ ibmmove(row, col)
 	rg.h.dl = col;
 	rg.h.dh = row;
 	rg.h.bh = 0;		/* set screen page number */
-	int86(0x10, &rg, &rg);
+	intv();
 }
 
 ibmeeol()	/* erase to the end of the line */
@@ -141,9 +174,9 @@ ibmeeol()	/* erase to the end of the line */
 	/* find the current cursor position */
 	rg.h.ah = 3;		/* read cursor position function code */
 	rg.h.bh = 0;		/* current video page */
-	int86(0x10, &rg, &rg);
-	ccol = rg.h.dl;		/* record current column */
-	crow = rg.h.dh;		/* and row */
+	intv();
+	ccol = rg.h.dl; 	/* record current column */
+	crow = rg.h.dh; 	/* and row */
 
 	/* build the attribute byte and setup the screen pointer */
 #if	COLOR
@@ -178,15 +211,14 @@ int ch; 	   current colors */
 #else
 	rg.h.bl = 0x07;
 #endif
-	int86(0x10, &rg, &rg);
+	intv();
 }
 
 ibmeeop()
 {
 	int attr;		/* attribute to fill screen with */
 
-	rg.h.ah = 6;		/* scroll page up function code */
-	rg.h.al = 0;		/* # lines to scroll (clear it) */
+	rg.x.ax = 0x0600;	/* clear window function code */
 	rg.x.cx = 0;		/* upper left corner of scroll */
 	rg.x.dx = (term.t_nrow << 8) | (term.t_ncol - 1);
 				/* lower right corner of scroll */
@@ -199,7 +231,7 @@ ibmeeop()
 	attr = 0;
 #endif
 	rg.h.bh = attr;
-	int86(0x10, &rg, &rg);
+	intv();
 }
 
 ibmrev(state)		/* change reverse video state */
@@ -240,6 +272,8 @@ ibmopen()
 	scinit(CDSENSE);
 	oldtype = dtype;
 	revexist = TRUE;
+	cheight = curheight(CHSENSE);
+
 	ttopen();
 }
 
@@ -259,16 +293,58 @@ ibmclose()
 }
 
 
+int ibm_xkeyb;
+
 ibmkopen()	/* open the keyboard */
 {
+#if MSC | TURBO
+	/* test for presence of an extended keyboard BIOS:
+	 * get extended shift key status with AL preset to
+	 * a highly unprobable return value:
+	 * both shift keys, ctrl, alt pressed and all toggles on
+	 */
+	rg.x.ax = 0x12FF;
+	intk();
+	/* if AL is unchanged, then we probably have an old BIOS because
+	 * an old BIOS wouldn't try to handle function call 0x12
+	 */
+	ibm_xkeyb = ( rg.h.al != 0xFF ) ? 0x10 : 0;
+	/* see also typahead() in termio.c */
+#else
+	ibm_xkeyb = 0;
+#endif
 }
 
 ibmkclose()	/* close the keyboard */
 {
 }
 
+#if MSC | TURBO
+ibmgetc()	// get a character
 {
+	int c;
+
+	rg.h.ah = ibm_xkeyb;
+	intk();
+
+	// map duplicate cursor keys to the standard ones
+	if ( ( unsigned char ) rg.h.al == 0xE0 && rg.h.ah )
+		rg.h.al = 0;
+
+	if ( rg.x.ax == 0x0300 )	// is this Ctrl-@ (ASCII NUL) ?
+		c = 0;
+	else if ( !rg.h.al )		// extended key code ?
+		c = SPEC | ( unsigned char ) rg.h.ah;
+	else
+		c = ( unsigned char ) rg.h.al;
+
+	// check for Ctrl-any unless Alt-nnn was typed
+	if ( rg.h.ah && ( unsigned char ) c < ' ' )	// assumes ASCII!
+		c |= CTRL | '@';
+
+	return c;
 }
+#endif
 
 scinit(type)	/* initialize the screen head pointers */
 int type;	/* type of adapter to init for */
@@ -288,11 +364,11 @@ int type;	/* type of adapter to init for */
 		return(TRUE);
 
 	/* if we try to switch to EGA and there is none, don't */
-	if (type == CDEGA && egaexist != TRUE)
+	if (type >= CDVGA28 && egaexist != TRUE)
 		return(FALSE);
 
 	/* if we had the EGA open... close it */
-	if (dtype == CDEGA)
+	if (dtype >= CDVGA28 && type < CDVGA28)
 		egaclose();
 
 	/* and set up the various parameters as needed */
@@ -303,10 +379,12 @@ int type;	/* type of adapter to init for */
 		case CDCGA:	/* Color graphics adapter */
 			scadd = SCADC;
 			break;
-		case CDEGA:	/* Enhanced graphics adapter */
+		case CDEGA35:	/* Enhanced graphics adapter */
+		case CDEGA43:
+		case CDVGA28:	/* Video Graphics Array */
 			scadd = SCADE;
 			if (oldtype != -1)	/* we're not initializing */
-				egaopen();
+				egaopen(type);	/* pass type (35/43/28 rows) */
 			break;
 	}
 
@@ -333,45 +411,67 @@ int type;	/* type of adapter to init for */
 		Current known types include:
 
 		CDMONO	Monochrome graphics adapter
-		CDCGA	Color Graphics Adapter
-		CDEGA	Extended graphics Adapter
+		CDCGA	Color Graphics Adapter/Enhanced Graphics Adapter 25 rows
+		CDEGA43 Enhanced Graphics Adapter 43 rows
+		CDEGA35 Enhanced Graphics Adapter 35 rows
+		CDVGA28 Video Graphics Array 28 rows
 */
-
-/* getbaord:	Detect the current display adapter
-		if MONO		set to MONO
-		   CGA		set to CGA	EGAexist = FALSE
-		   EGA		set to CGA	EGAexist = TRUE
-*/
-
 int getboard()
-
 {
 	int type;	/* board type to return */
+	int nrows;	/* #screen rows from BIOS data area */
 
-	type = CDCGA;
-	int86(0x11, &rg, &rg);
-	if ((((rg.x.ax >> 4) & 3) == 3))
-		type = CDMONO;
+	nrows = * (unsigned char far *) 0x0484L + 1;
+	term.t_ncol = * (unsigned char far *) 0x044AL;
 
-	/* test if EGA present */
-	rg.x.ax = 0x1200;
-	rg.x.bx = 0xff10;
-	int86(0x10,&rg, &rg);		/* If EGA, bh=0-1 and bl=0-3 */
-	egaexist = !(rg.x.bx & 0xfefc);	/* Yes, it's EGA */
-	return(type);
+	switch ( nrows )  {
+		case 43:
+		case 50:
+			type = CDEGA43;  break;
+		case 35:
+		case 40:
+			type = CDEGA35;  break;
+		case 28:
+			type = CDVGA28;  break;
+		default:
+			type = (* (char far *) 0x0449L == 7) ? CDMONO : CDCGA;	break;
+	}
+
+	/* test if EGA/VGA present */
+	egaexist = (nrows > 1);
+
+	return type;
 }
 
-egaopen()	/* init the computer to work with the EGA */
-
+egaopen(type)	/* init the computer to work with the EGA */
 {
-	/* put the beast into EGA 43 row mode */
-	rg.x.ax = 3;
-	int86(16, &rg, &rg);
+	if ( type == CDEGA35 )	{
+		execprog( "NCC /40" );	// NCC must be on the PATH!
+		return;
+	}
 
-	rg.h.ah = 17;		/* set char. generator function code */
-	rg.h.al = 18;		/*  to 8 by 8 double dot ROM         */
-	rg.h.bl = 0;		/* block 0                           */
-	int86(16, &rg, &rg);
+	/* put the beast into EGA 43 row mode */
+	rg.x.ax = 0x0003;
+	intv();
+
+	rg.x.ax = (type == CDEGA43) ? 0x1112 : 0x1111;
+				/* set char. generator function code	*/
+				/*  to 8 by 8 or 8 by 14 char. set	*/
+	rg.h.bl = 0;		/* block 0				*/
+	intv();
+
+	rg.x.ax = 0x1200;	/* alternate select function code	*/
+				/* clear AL for no good reason		*/
+	rg.h.bl = 32;		/* alt. print screen routine		*/
+	intv();
+
+	rg.h.ah = 1;		/* set cursor size function code	*/
+	rg.x.cx = 0x0607;	/* turn cursor on code			*/
+	intv();
+
+	outp(0x03D4, 10);	/* video bios bug patch 		*/
+	outp(0x03D5, 6);
+}
 
 egaclose()  {
 
@@ -379,13 +479,20 @@ egaclose()  {
 	rg.x.ax = 3;
 	intv();
 
+	* ( char far * ) 0x0487L &= ~0x01;	/* turn on cursor emulation */
 }
 
-egaclose()  {
+int curheight(height)  {
 
-	/* put the beast back into 25 line mode */
-	rg.x.ax = 3;
-	int86(16, &rg, &rg);
+	rg.h.ah = 0x03; 		/* get cursor shape */
+	rg.h.bl = 0;			/* page 0 */
+	intv();
+	if (height >= 0) {
+		rg.h.ah = 0x01; 	/* set cursor shape */
+		rg.h.ch = rg.h.cl - height + 1;
+		intv();
+	}
+	return rg.h.cl - rg.h.ch + 1;
 }
 
 scwrite(row, outstr, forg, bacg)	/* write a line out */
@@ -408,18 +515,10 @@ int bacg;	/* background color */
 	attr = (((bacg & 15) << 4) | (forg & 15)) << 8;
 #endif
 	lnptr = &sline[0];
-	for (i=0; i<term.t_ncol; i++)
-		*lnptr++ = (outstr[i] & 255) | attr;
+	for ( i = 0; i < term.t_ncol; i++ )
+		*lnptr++ = ( unsigned char ) *outstr++ | attr;
 
-	if (flickcode && (dtype == CDCGA)) {
-		/* wait for vertical retrace to be off */
-		while ((inp(0x3da) & 8))
-			;
-	
-		/* and to be back on */
-		while ((inp(0x3da) & 8) == 0)
-			;
-	}
+	if (flickcode) flickwait();
 
 	/* and send the string out */
 	movmem( &sline[0], scptr[ row ], term.t_ncol * 2 );

@@ -444,6 +444,7 @@ typedef struct	BUFFER {
 #define MDMAGIC 0x0040			/* regular expresions in search */
 #define MDCRYPT 0x0080			/* encrytion mode active	*/
 #define MDASAVE 0x0100			/* auto-save mode		*/
+#define MDBINARY 0x0200 		/* binary file mode		*/
 
 /*
  * The starting position of a region, and the size of the region in

@@ -1,0 +1,41 @@
+#
+#       makefile for MicroEMACS 3.9e with Turbo C make
+#
+
+MODEL=  c
+CFLAGS= -m$(MODEL) -c
+LFLAGS= /m /c
+LIBDIR= \bc\lib
+
+OFILES= basic.obj buffer.obj crypt.obj \
+        display.obj exec.obj file.obj fileiotc.obj \
+        ibmpc.obj input.obj line.obj \
+        random.obj region.obj search.obj spawn.obj \
+        termio.obj \
+        window.obj word.obj
+
+CFILES= basic.c bind.c buffer.c crypt.c \
+        display.c eval.c exec.c file.c fileiotc.c \
+        ibmpc.c input.c line.c \
+        main.c random.c region.c search.c spawn.c \
+        termio.c \
+        window.c word.c
+
+HFILES= estruct.h edef.h
+
+emacs.sym:      emacs.map emacs.exe
+        mapsym emacs
+
+emacs.exe emacs.map:    $(OFILES) main.obj bind.obj eval.obj
+        tlink $(LFLAGS) $(LIBDIR)\c0$(MODEL) @ue.lnk, $(LIBDIR)\c$(MODEL)
+
+main.obj:       $(HFILES) efunc.h ebind.h
+
+bind.obj:       $(HFILES) epath.h
+
+eval.obj:       $(HFILES) evar.h
+
+$(OFILES):      $(HFILES)
+
+.c.obj:
+        bcc -I\bc\inc $(CFLAGS) $*.c

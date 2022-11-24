@@ -98,6 +98,7 @@ int	saveflag = 0;		/* Flags, saved with the $target var */
 char	*fline = NULL;		/* dynamic return line */
 int	flen = 0;		/* current length of fline */
 int	rval = 0;		/* return value of a subprocess */
+int	bufcnt = 0;		/* # of visible buffers */
 #if	CALLED
 int	eexitflag = FALSE;	/* EMACS exit flag */
 int	eexitval = 0;		/* and the exit return value */
@@ -238,6 +239,7 @@ extern	int	saveflag;		/* Flags, saved with the $target var */
 extern	char	*fline;			/* dynamic return line		*/
 extern	int	flen;			/* current length of fline	*/
 extern	int	rval;			/* return value of a subprocess */
+extern	int	bufcnt;			/* # of visible buffers		*/
 #if	CALLED
 extern	int	eexitflag;		/* EMACS exit flag */
 extern	int	eexitval;		/* and the exit return value */

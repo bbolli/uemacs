@@ -223,7 +223,7 @@ int f, n;	/* default Flag & Numeric argument */
 
 		/* first scan back until we are in a word */
 		suc = backchar(FALSE, 1);
-		while (!inword() && suc)
+		while (!inword(-1) && suc)
 			suc = backchar(FALSE, 1);
 		curwp->w_doto = 0;	/* and go to the B-O-Line */
 
@@ -239,7 +239,7 @@ int f, n;	/* default Flag & Numeric argument */
 
 		/* and then forward until we are in a word */
 		suc = forwchar(FALSE, 1);
-		while (suc && !inword())
+		while (suc && !inword(-1))
 			suc = forwchar(FALSE, 1);
 	}
 	curwp->w_flag |= WFMOVE;	/* force screen update */
@@ -262,7 +262,7 @@ int f, n;	/* default Flag & Numeric argument */
 
 		/* first scan forward until we are in a word */
 		suc = forwchar(FALSE, 1);
-		while (!inword() && suc)
+		while (!inword(-1) && suc)
 			suc = forwchar(FALSE, 1);
 		curwp->w_doto = 0;	/* and go to the B-O-Line */
 		if (suc)	/* of next line if not at EOF */
@@ -281,7 +281,7 @@ int f, n;	/* default Flag & Numeric argument */
 
 		/* and then backward until we are in a word */
 		suc = backchar(FALSE, 1);
-		while (suc && !inword()) {
+		while (suc && !inword(-1)) {
 			suc = backchar(FALSE, 1);
 		}
 		curwp->w_doto = llength(curwp->w_dotp); /* and to the EOL */
@@ -324,64 +324,103 @@ register LINE	*dlp;
 
 /*
  * Scroll forward by a specified number of lines, or by a full page if no
- * argument. Bound to "C-V". The "2" in the arithmetic on the window size is
- * the overlap; this value is the default overlap value in ITS EMACS. Because
- * this zaps the top line in the display window, we have to do a hard update.
+ * argument. Bound to "C-V".
+ * This was changed to work like most editors do, i.e. the top window line
+ * moves as much as the "." line, to the effect that "." stays at about the
+ * same screen position. The offset logic is from forwline.
  */
 forwpage(f, n)
-register int    n;
+register int	n;
 {
-        register LINE   *lp;
+	register LINE *lp, *lt;
 
-        if (f == FALSE) {
-                n = curwp->w_ntrows - 2;        /* Default scroll.      */
-                if (n <= 0)                     /* Forget the overlap   */
-                        n = 1;                  /* if tiny window.      */
-        } else if (n < 0)
-                return (backpage(f, -n));
-#if     CVMVAS
-        else                                    /* Convert from pages   */
-                n *= curwp->w_ntrows;           /* to lines.            */
+	if (f == FALSE) {
+		n = curwp->w_ntrows - OVERLAP;	/* Default scroll.	*/
+		if (n <= 0)			/* Forget the overlap	*/
+			n = 1;			/* if tiny window.	*/
+	} else if (n < 0)
+		return (backpage(f, -n));
+#if	CVMVAS
+	else					/* Convert from pages	*/
+		n *= curwp->w_ntrows;		/* to lines.		*/
 #endif
-        lp = curwp->w_linep;
-        while (n-- && lp!=curbp->b_linep)
-                lp = lforw(lp);
-        curwp->w_linep = lp;
-        curwp->w_dotp  = lp;
-        curwp->w_doto  = 0;
-        curwp->w_flag |= WFHARD;
-        return (TRUE);
+	/* if we are on the last line as we start....fail the command */
+	if (curwp->w_dotp == curbp->b_linep)
+		return FALSE;
+
+	/* if the last command was not a line move, reset the goal column */
+	if ((lastflag & CFCPCN) == 0)
+		curgoal = getccol(FALSE);
+
+	/* flag this command as a line move */
+	thisflag |= CFCPCN;
+
+	/* and move the point and the top window line down */
+	lp = curwp->w_dotp;
+	lt = curwp->w_linep;
+	while (n-- && lp!=curbp->b_linep)
+		lp = lforw(lp),  lt = lforw(lt);
+
+	/* reset the current position */
+	curwp->w_linep = lt;
+	curwp->w_dotp  = lp;
+	curwp->w_doto  = getgoal(lp);
+	curwp->w_flag |= WFHARD;
+	return TRUE;
 }
 
 /*
- * This command is like "forwpage", but it goes backwards. The "2", like
- * above, is the overlap between the two windows. The value is from the ITS
- * EMACS manual. Bound to "M-V". We do a hard update for exactly the same
- * reason.
+ * This command is like "forwpage", but it goes backwards. Bound to "M-V".
  */
 backpage(f, n)
-register int    n;
+register int	n;
 {
-        register LINE   *lp;
+	register LINE *lp, *lt;
 
-        if (f == FALSE) {
-                n = curwp->w_ntrows - 2;        /* Default scroll.      */
-                if (n <= 0)                     /* Don't blow up if the */
-                        n = 1;                  /* window is tiny.      */
-        } else if (n < 0)
-                return (forwpage(f, -n));
-#if     CVMVAS
-        else                                    /* Convert from pages   */
-                n *= curwp->w_ntrows;           /* to lines.            */
+	if (f == FALSE) {
+		n = curwp->w_ntrows - OVERLAP;	/* Default scroll.	*/
+		if (n <= 0)			/* Don't blow up if the */
+			n = 1;			/* window is tiny.	*/
+	} else if (n < 0)
+		return (forwpage(f, -n));
+#if	CVMVAS
+	else					/* Convert from pages	*/
+		n *= curwp->w_ntrows;		/* to lines.		*/
 #endif
-        lp = curwp->w_linep;
-        while (n-- && lback(lp)!=curbp->b_linep)
-                lp = lback(lp);
-        curwp->w_linep = lp;
-        curwp->w_dotp  = lp;
-        curwp->w_doto  = 0;
-        curwp->w_flag |= WFHARD;
-        return (TRUE);
+
+	/* if we are on the first line as we start, try to move "." to BOL,
+	 * else fail the command
+	 */
+	if (lback(curwp->w_dotp) == curbp->b_linep)
+		if ( curwp->w_doto != 0 ) {
+			curwp->w_doto = 0;
+			curwp->w_flag |= WFMOVE;
+			return TRUE;
+		} else
+			return FALSE;
+
+	/* if the last command was not a line move, reset the goal column */
+	if ((lastflag & CFCPCN) == 0)
+		curgoal = getccol(FALSE);
+
+	/* flag this command as a line move */
+	thisflag |= CFCPCN;
+
+	/* and move the point up */
+	lp = curwp->w_dotp;
+	lt = curwp->w_linep;
+	while ( n-- && lback( lp ) != curbp->b_linep ) {
+		lp = lback( lp );
+		if ( lback( lt ) != curbp->b_linep )
+			lt = lback( lt );
+	}
+
+	/* reset the current position */
+	curwp->w_linep = lt;
+	curwp->w_dotp  = lp;
+	curwp->w_doto  = getgoal(lp);
+	curwp->w_flag |= WFHARD;
+	return TRUE;
 }
 
 /*

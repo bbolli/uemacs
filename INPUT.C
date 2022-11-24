@@ -126,6 +126,9 @@ int (*getname())()
 	/* build a name string from the keyboard */
 	while (TRUE) {
 		c = tgetc();
+#if	IBMPC & (TURBO | MSC)
+		c = ectoc( c );
+#endif
 
 		/* if we are at the end, just match it */
 		if (c == 0x0d) {
@@ -294,6 +297,8 @@ get1key()
 	/* get a keystroke */
 	c = tgetc();
 
+#if	!(IBMPC & (TURBO | MSC))
+	/* SPEC and CTRL prefixes are handled by ibmgetc() */
 
 #if	MSDOS | ST520
 	if (c == 0) {				/* Apply SPEC prefix	*/
@@ -337,6 +342,7 @@ get1key()
 	if (c>=0x00 && c<=0x1F) 		/* C0 control -> C-	*/
 		c = CTRL | (c+'@');
 
+#endif	!(IBMPC & (TURBO | MSC))
 	return (c);
 }
 

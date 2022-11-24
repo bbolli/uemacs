@@ -1,0 +1,1 @@
+main.obj basic.obj bind.obj buffer.obj crypt.obj display.obj eval.obj exec.obj file.obj fileiotc.obj ibmpc.obj input.obj line.obj random.obj region.obj search.obj spawn.obj termio.obj window.obj word.obj, emacs, emacs

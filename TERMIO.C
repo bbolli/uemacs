@@ -452,7 +452,20 @@ typahead()
 
 {
 #if	MSC | TURBO
+#if	IBMPC
+	extern int ibm_xkeyb;
+
+	rg.h.ah = ibm_xkeyb + 1;
+	intk();
+	if ( rg.x.flags & 64 )  {	// ZF set --> no char pending
+		rg.x.ax = 0x1680;
+		intr( 0x2F );		// give Windows a chance
+		return FALSE;
+	}
+	return TRUE;	// there are chars pending
+#else
 	return kbhit() ? TRUE : FALSE;
+#endif
 #endif
 
 #if	MSDOS & (LATTICE | AZTEC | MWC86)

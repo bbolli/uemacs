@@ -28,6 +28,7 @@ char *fname;		/* name of function to evaluate */
 	static char result[2 * NSTRING];	/* string result */
 	char *flook();			/* look file up on path */
 	char *xlat();			/* translate a char string */
+	char *strim();			/* trim a string */
 #if	ENVFUNC
 	char *getenv();			/* get environment string */
 #endif
@@ -94,7 +95,12 @@ char *fname;		/* name of function to evaluate */
 		case UFCHR:	result[0] = atoi(arg1);
 				result[1] = 0;
 				return(result);
-		case UFGTKEY:	result[0] = tgetc();
+		case UFGTKEY:
+#if IBMPC & ( TURBO | MSC )
+				result[0] = ectoc( tgetc() );
+#else
+				result[0] = tgetc();
+#endif
 				result[1] = 0;
 				return(result);
 		case UFRND:	return(itoa((ernd() % abs(atoi(arg1))) + 1));
@@ -117,6 +123,7 @@ char *fname;		/* name of function to evaluate */
  		case UFBXOR:	return(itoa(atoi(arg1) ^ atoi(arg2)));
 		case UFBNOT:	return(itoa(~atoi(arg1)));
 		case UFXLATE:	return(xlat(arg1, arg2, arg3));
+		case UFTRIM:	return(strim(arg1));
 		default:	return errorm;
 	}
 }
@@ -199,6 +206,14 @@ char *vname;		/* name of environment variable to retrieve */
 		case EVLINE:	return getctext();
 		case EVGFLAGS:	ival = gflags;	goto reti;
 		case EVRVAL:	ival = rval;	goto reti;
+		case EVBUFCNT:	ival = bufcnt;	goto reti;
+		case EVCHEIGHT:
+#if	IBMPC
+			ival = curheight(-1);
+#else
+			ival = 0;
+#endif
+			goto reti;
 		default:
 			return errorm;
 	}
@@ -268,16 +283,20 @@ int n;		/* numeric arg (can override prompted value) */
 	if (f == TRUE)
 		strcpy(value, itoa(n));
 	else {
-		status = mlreply("Value: ", &value[0], NSTRING);
-		if (status != TRUE)
-			return(status);
+		strcpy( prompt, "Value [" );
+		strcat( prompt, getval( var ) );
+		strcpy( &prompt[ term.t_ncol - 17 ], "..." );
+		strcat( prompt, "]: " );
+		status = mlreply( prompt, &value[0], NSTRING );
+		if ( status != TRUE )
+			return( status );
 	}
 
 	/* and set the appropriate value */
 	status = svar(&vd, value);
 
 #if	DEBUGM
-	/* if $debug == TRUE, every assignment will echo a statment to
+	/* if $debug == TRUE, every assignment will echo a statement to
 	   that effect here. */
 	
 	if (macbug) {
@@ -465,6 +484,12 @@ char *value;	/* value to set to */
 		case EVLINE:	putctext(value);
 		case EVGFLAGS:	gflags = ival;	break;
 		case EVRVAL:	break;
+		case EVBUFCNT:	break;
+		case EVCHEIGHT:	
+#if	IBMPC
+			curheight( ival );
+#endif
+			break;
 		}
 		break;
 	}
@@ -768,4 +793,21 @@ xnext:		++sp;
 	/* terminate and return the result */
 	*rp = 0;
 	return(result);
+}
+
+/*	Trim ' ', '\t' and '\n' off the ends of a string */
+
+#define iswhite(c)	((c) == ' ' || (c) == '\t' || (c) == '\n')
+
+char *strim(s)
+char *s;	/* string to be trimmed */
+{
+	register char *p;
+	
+	while (iswhite(*s))
+		s++;
+	p = s + strlen(s) - 1;
+	while (p >= s && iswhite(*p))
+		*p-- = '\0';
+	return(s);
 }

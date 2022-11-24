@@ -836,7 +836,11 @@ int	n;	/* # of repetitions wanted */
 pprompt:		mlwrite(&tpat[0], &pat[0], &rpat[0]);
 qprompt:		update(TRUE);  /* show the proposed place to change */
 
+#if IBMPC & ( TURBO | MSC )
+			c = ectoc( tgetc() );
+#else
 			c = tgetc();
+#endif
 			mlwrite("");			/* and clear it */
 
 			/* And respond appropriately.

@@ -11,6 +11,21 @@
 overlay	"window"
 #endif
 
+/* Make a new window current.  Execute the Buffer Setup macro, if the
+ * new window display an other than the previous buffer.
+ */
+
+swwindow( WINDOW *wp )  {
+	BUFFER *oldbp;
+	curwp = wp;
+	oldbp = curbp;
+	curbp = wp->w_bufp;
+	upmode();
+	if ( oldbp != curbp )
+		execute( META | SPEC | 'S', FALSE, 1 );
+}
+
+
 /*
  * Reposition dot in the current window to line "n". If the argument is
  * positive, it is that line. If it is negative it is that line from the
@@ -86,9 +101,8 @@ int f, n;	/* default flag and numeric argument */
 	} else
 		if ((wp = curwp->w_wndp) == NULL)
 			wp = wheadp;
-	curwp = wp;
-	curbp = wp->w_bufp;
-	upmode();
+
+	swwindow(wp);
 	return (TRUE);
 }
 
@@ -115,9 +129,7 @@ prevwind(f, n)
 	while (wp1->w_wndp != wp2)
 		wp1 = wp1->w_wndp;
 
-	curwp = wp1;
-	curbp = wp1->w_bufp;
-	upmode();
+	swwindow(wp1);
 	return (TRUE);
 }
 
@@ -303,10 +315,8 @@ int f, n;	/* arguments are ignored for this command */
 	else
 		lwp->w_wndp = curwp->w_wndp;
 	free((char *)curwp);
-	curwp = wp;
 	wp->w_flag |= WFHARD;
-	curbp = wp->w_bufp;
-	upmode();
+	swwindow(wp);
 	return(TRUE);
 }
 
@@ -561,9 +571,7 @@ restwnd(f, n)		/* restore the saved screen */
 	wp = wheadp;
 	while (wp != NULL) {
 		if (wp == swindow) {
-			curwp = wp;
-			curbp = wp->w_bufp;
-			upmode();
+			swwindow(wp);
 			return (TRUE);
 		}
 		wp = wp->w_wndp;
@@ -655,6 +663,7 @@ int n;	/* numeric argument */
 	/* screen is garbage */
 	term.t_nrow = n - 1;
 	sgarbf = TRUE;
+	execute( META | SPEC | 'S', FALSE, 1 );
 	return(TRUE);
 }
 

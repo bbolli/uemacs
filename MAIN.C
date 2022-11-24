@@ -847,6 +847,59 @@
  *	  and continue execution.
  *	[Froze for version 3.9e USENET release]
  *
+ * =============================== dWARE/bb ====================================
+ *
+ *	13-dec-88 [MSDOS/IBMPC/Turbo C]
+ *	- added 50 line VGA support
+ *	- added extended keyboard support. The keyboard BIOS type detection
+ *	  logic is in ibmkopen()
+ *	- fixed stock() to deal with ^? and FN<high-bit-char>
+ *	- fixed buffer-position bug when at EOF; changed it to report
+ *	  1-based line and column counts instead if 0-based
+ *	- changed forw/backpage to work the way I like it (net effect:
+ *	  the screen cursor stays about where it is)
+ *	- changed the load/save file message to include the file name
+ *	- changed the setvar() "Value:" prompt to include the variable's
+ *	  current value, which lets you query a variable without hassle
+ *	- added command line expanding in file reargv.c
+ *	- changed main() to convert command line file names to lowercase
+ *	- fixed execprog() to search for .COM files first (like DOS does)
+ *	- added %hello message display (this was removed again later)
+ *	- sped up file I/O for Turbo C using low-level functions and a large
+ *	  buffer (fileiotc.c)
+ *	20-dec-88
+ *	- moved the statement to set a buffer's global mode from main() to
+ *	  swbuffer()
+ *	- added the $bufcnt read-only variable which returns the number
+ *	  of currently visible buffers to speed up my previous-buffer macro
+ *	- added the reset-mark command (just for symmetry)
+ *	- modified cmdstr() and stock() to substitute 'á' (Alt-225) for space
+ *	  as in FNá (Alt-D on an IBM PC)
+ *	- added the M-FNS internal binding which is executed after every
+ *	  select-buffer command. Use it to set filename specific key
+ *	  bindings etc
+ *	- changed the keyboard read logic. SPEC and CTRL prefixes are now
+ *	  handled in ibmgetc() instead of in get1key(). This prevents funny
+ *	  characters from appearing in the text upon returning from
+ *	  shell-command and execute-program
+ *	29-mar-89
+ *	- added the &trim unary function which trims blanks, tabs and newlines
+ *	  off *BOTH* ends of a string (very handy)
+ *	- added two escaped characters: "~a" (BEL) and "~e" (ESC) [viva ANSI]
+ *	03-may-89
+ *	- fixed gotobop() and gotoeop(). Nobody see that inword() needs a
+ *	  negative argument in order to check the character at dot????
+ *	02-jun-89
+ *	- added Binary and Text modes (add-mode binary). Text mode works as
+ *	  usual, binary mode treats '\r' as end-of-line character and doesn't
+ *	  translate '\n' to "\r\n" on reading or writing a file. Handy to edit
+ *	  Macintosh text files.
+ *	30-aug-89
+ *	- made Alt-<NumPad> self-inserting, even when control characters are
+ *	  entered
+ *	19-nov-90
+ *	- added $cheight environment variable which controls cursor height
+ *	- added 28 line support for VGA displays
  */
 
 #include	<stdio.h>
@@ -878,6 +931,11 @@ int _STKLOW = 0;		/* default is stack above heap (small only) */
 
 #if	MSDOS & TURBO
 unsigned _stklen = 32766;
+#define _setargv
+#define _setenvp
+#include <minilib.c>		/* get rid of unwanted library routines */
+#define exit(n)	_exit(n)
+#include <lib/reargv.c>		/* command line argument expander */
 #endif
 
 #if	VMS
@@ -943,6 +1001,9 @@ char *argv[];	/* argument strings */
 #endif
 
 	/* Parse the command line */
+#if	MSDOS & TURBO
+	reargv( &argc, &argv ); /* expand wildcard arguments UNIX-Style */
+#endif
 	for (carg = 1; carg < argc; ++carg) {
 
 		/* Process Switches */
@@ -952,6 +1013,10 @@ char *argv[];	/* argument strings */
 				case 'a':	/* process error file */
 				case 'A':
 					errflag = TRUE;
+					break;
+				case 'b':	/* -b for Binary Mode */
+				case 'B':
+					binaryflag = TRUE;
 					break;
 				case 'e':	/* -e for Edit file */
 				case 'E':
@@ -978,6 +1043,10 @@ char *argv[];	/* argument strings */
 					searchflag = TRUE;
 					strncpy(pat,&argv[carg][2],NPAT);
 					break;
+				case 't':	/* -t for Text Mode */
+				case 'T':
+					binaryflag = FALSE;
+					break;
 				case 'v':	/* -v for View File */
 				case 'V':
 					viewflag = TRUE;
@@ -999,6 +1068,9 @@ char *argv[];	/* argument strings */
 			/* Process an input file */
 
 			/* set up a buffer for this file */
+#if	ST520 | MSDOS | CPM
+			mklower(argv[carg]);
+#endif
 			makename(bname, argv[carg]);
 			unqname(bname);
 
@@ -1012,6 +1084,8 @@ char *argv[];	/* argument strings */
 			}
 
 			/* set the modes appropriately */
+			if (binaryflag)
+				bp->b_mode |= MDBINARY;
 			if (viewflag)
 				bp->b_mode |= MDVIEW;
 #if	CRYPT

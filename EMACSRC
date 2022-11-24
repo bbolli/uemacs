@@ -1,0 +1,340 @@
+; startup file for MicroEMACS 3.9e/dWARE/bb
+
+set $discmd FALSE
+; write-message "Loading startup file ..."
+
+bind-to-key	abort-command			^G
+bind-to-key	add-mode			^XM
+bind-to-key	add-global-mode 		M-M
+bind-to-key	apropos 			M-A
+bind-to-key	backward-character		FNK	; Left
+bind-to-key	begin-macro			^X(
+bind-to-key	beginning-of-file		FNw	; Ctrl-Home
+bind-to-key	beginning-of-line		FNG	; Home
+bind-to-key	bind-to-key			M-K
+bind-to-key	buffer-position 		FNT	; Shift-F1
+bind-to-key	case-region-lower		FNa	; Ctrl-F4
+bind-to-key	case-region-upper		FN`	; Ctrl-F3
+bind-to-key	case-word-capitalize		M-C
+bind-to-key	case-word-lower 		FN_	; Ctrl-F2
+bind-to-key	case-word-upper 		FN^	; Ctrl-F1
+bind-to-key	change-file-name		FNA	; F7
+bind-to-key	change-screen-size		M-^S
+bind-to-key	change-screen-width		M-^T
+bind-to-key	clear-and-redraw		^X^L
+; bind-to-key	clear-message-line
+bind-to-key	copy-region			FN£	; Alt-Del
+bind-to-key	count-words			M-^C
+bind-to-key	ctlx-prefix			^X
+bind-to-key	delete-blank-lines		^X^O
+bind-to-key	delete-buffer			^XK
+bind-to-key	delete-mode			^X^M
+bind-to-key	delete-global-mode		M-^M
+bind-to-key	delete-next-character		FNS	; Del
+bind-to-key	delete-next-word		^W
+bind-to-key	delete-other-windows		FN,	; Left-Alt-Z
+bind-to-key	delete-previous-character	^H	; Backspace
+bind-to-key	delete-previous-character	FN^O	; Shift-Tab
+bind-to-key	delete-previous-word		FN^N	; Alt-Backspace
+bind-to-key	delete-window			^X0
+bind-to-key	describe-bindings		FNh	; Alt-F1
+bind-to-key	describe-key			FN‚	; Alt-?
+bind-to-key	detab-line			^X^D
+bind-to-key	end-macro			^X)
+bind-to-key	end-of-file			FNu	; Ctrl-End
+bind-to-key	end-of-line			FNO	; End
+bind-to-key	entab-line			^X^E
+bind-to-key	exchange-point-and-mark 	^X^X
+bind-to-key	execute-buffer			M-X
+bind-to-key	execute-command-line		FN-	; Alt-X
+bind-to-key	execute-file			^XX
+bind-to-key	execute-macro			^XE
+bind-to-key	execute-named-command		M-^[	; Esc Esc
+bind-to-key	execute-procedure		M-^E
+bind-to-key	execute-program 		FN+	; Alt-$
+bind-to-key	exit-emacs			FN†	; F12
+bind-to-key	fill-paragraph			^X^F
+bind-to-key	filter-buffer			^X|
+bind-to-key	find-file			FNB	; F8
+bind-to-key	forward-character		FNM	; Right
+bind-to-key	goto-line			FN$	; Alt-J (Jump)
+bind-to-key	goto-matching-fence		FN^?	; Left-Alt-8
+bind-to-key	goto-matching-fence		FN€	; Left-Alt-9
+bind-to-key	grow-window			^XFNH	; ^X Up
+bind-to-key	handle-tab			^I
+bind-to-key	hunt-forward			^S
+bind-to-key	hunt-backward			^R
+bind-to-key	help				FN;	; F1
+bind-to-key	i-shell 			^XC
+;; bind-to-key	incremental-search
+bind-to-key	insert-file			FN"	; Alt-G (Get)
+; bind-to-key	insert-space
+; bind-to-key	insert-string
+bind-to-key	kill-paragraph			M-^H	; Esc BackSp
+bind-to-key	kill-region			FN“	; Ctrl-Del
+bind-to-key	kill-to-end-of-line		^E
+bind-to-key	list-buffers			^X^B
+bind-to-key	meta-prefix			^[
+; bind-to-key	move-window-down		^X^N
+; bind-to-key	move-window-up			^X^P
+bind-to-key	name-buffer			FNn	; Alt-F7
+bind-to-key	newline 			FN^\	; Alt-Enter
+; bind-to-key	newline-and-indent
+bind-to-key	next-buffer			FND	; F10
+bind-to-key	next-line			FNP	; Down
+bind-to-key	next-page			FNQ	; PgDn
+bind-to-key	next-paragraph			M-FNP	; Esc Down
+bind-to-key	next-window			M-FNQ	; Esc PgDn
+bind-to-key	next-word			FNt	; Ctrl-Right
+bind-to-key	open-line			^O
+; bind-to-key	overwrite-string
+bind-to-key	pipe-command			^X>
+bind-to-key	previous-line			FNH	; Up
+bind-to-key	previous-page			FNI	; PgUp
+bind-to-key	previous-paragraph		M-FNH	; Esc Up
+bind-to-key	previous-window 		M-FNI	; Esc PgUp
+bind-to-key	previous-word			FNs	; Ctrl-Left
+bind-to-key	query-replace-string		M-^R
+bind-to-key	quick-exit			FNk	; Alt-F4
+bind-to-key	quote-character 		^Q
+bind-to-key	read-file			^X^R
+bind-to-key	redraw-display			^L
+bind-to-key	reset-mark			FN^V	; Alt-U
+bind-to-key	resize-window			^XW
+; bind-to-key	restore-window
+bind-to-key	replace-string			M-R
+;; bind-to-key	reverse-incremental-search
+bind-to-key	run				M-^E
+bind-to-key	save-file			FN<	; F2
+; bind-to-key	save-window
+bind-to-key	scroll-next-up			M-^Y
+bind-to-key	scroll-next-down		M-^V
+bind-to-key	search-forward			FN^_	; Alt-S
+bind-to-key	search-reverse			FN^S	; Alt-R
+bind-to-key	select-buffer			^XB
+bind-to-key	set				^XA
+bind-to-key	set-encryption-key		M-E
+bind-to-key	set-fill-column 		^XF
+bind-to-key	set-mark			FN4	; Alt-.
+bind-to-key	shell-command			FN^[	; Alt-!
+bind-to-key	shrink-window			^XFNP	; ^X Down
+bind-to-key	split-current-window		^X2
+; bind-to-key	store-macro
+; bind-to-key	store-procedure
+bind-to-key	transpose-characters		^T
+bind-to-key	trim-line			^X^T
+bind-to-key	unbind-key			M-^K
+bind-to-key	universal-argument		^U
+bind-to-key	unmark-buffer			M-'
+; bind-to-key	update-screen
+bind-to-key	view-file			^X^V
+bind-to-key	wrap-word			M-FNW
+bind-to-key	write-file			^X^W
+; bind-to-key	write-message
+bind-to-key	yank				FN’	; Ctrl-Ins
+
+
+; ===================== Macros =======================
+
+store-procedure CursorSize	; set the right cursor size
+	!if &band $cmode 32	; 32 is OVER mode
+		set $cheight 2
+	!else
+		set $cheight 5
+	!endif
+!endm
+
+; define the kill-line macro and bind it to Ctrl-Backspace
+40 store-macro
+	set %x $curcol
+	beginning-of-line
+	1 kill-to-end-of-line
+	set $curcol %x
+!endm
+bind-to-key execute-macro-40 ^?
+
+; define the toggle-over-mode macro and bind it to Insert
+39 store-macro
+	set $cmode &bxor $cmode 32	; 32 is OVER mode
+	execute-procedure CursorSize
+!endm
+bind-to-key execute-macro-39 FNR
+
+; define the previous-buffer macro and bind it to Alt-F10
+38 store-macro
+	!if &greater $bufcnt 1
+		!if &seq &left $cbufname 1 "["	; invisible buffer ?
+			$bufcnt next-buffer
+		!else
+			&sub $bufcnt 1 next-buffer
+		!endif
+	!endif
+!endm
+bind-to-key execute-macro-38 FNq
+
+; define the quit macro and bind it to F3
+37 store-macro
+	set %buf37 $cbufname
+	execute-macro-38
+	!if &not &equ $wline &sub $pagelen 2	; more than one window ?
+		delete-other-windows
+	!endif
+	!if &seq %buf37 $cbufname		; only one buffer ?
+		exit-emacs
+	!else
+		!force delete-buffer %buf37
+		!if &not $status		; didn't want to quit ?
+			select-buffer %buf37	; use original buffer
+		!endif
+	!endif
+!endm
+bind-to-key execute-macro-37 FN=
+
+; define the file macro and bind it to F4
+36 store-macro
+	save-file
+	execute-macro-37
+!endm
+bind-to-key execute-macro-36 FN>
+
+;define the toggle-screen-resolution macro and bind it to Alt-F9
+35 store-macro
+	!if &seq $sres EGA35
+		set $sres CGA
+	!else
+		set $sres EGA35
+	!endif
+!endm
+bind-to-key execute-macro-35 FNp
+
+; define the insert-line-and-indent macro
+34 store-macro
+	end-of-line
+	newline-and-indent
+!endm
+bind-to-key execute-macro-34 ^M
+
+; define the insert-line macro
+33 store-macro
+	end-of-line
+	newline
+!endm
+
+; define the write-region macro and bind it to Alt-P (Put)
+32 store-macro
+	set %x $cbufname
+	set %y $cwline
+	copy-region
+	select-buffer Tmp
+	change-file-name @"Put file ? "
+	!if &or &seq $cfname ERROR &seq $cfname ""
+		!return
+	!endif
+	yank
+	save-file
+	select-buffer %x
+	%y redraw-display
+	delete-buffer Tmp
+!endm
+bind-to-key execute-macro-32 FN^Y
+
+; define the read-file macro
+31 store-macro
+	set %x $cfname
+	set %y &sindex %x \
+	set %z &sindex %x /
+	!while &or %y %z
+		!if &gre %y %z
+			set %x &mid %x &add %y 1 999
+		!else
+			set %x &mid %x &add %z 1 999
+		!endif
+		set %y &sindex %x \
+		set %z &sindex %x /
+	!endwhile
+	set %y &sindex %x .
+	!if %y
+		set %x &mid %x %y 999
+		!if &sindex .c.h.cpp.hpp.asm.asi.inc %x
+			add-mode CMODE
+		!endif
+	!endif
+	&bind M-FNS		; execute the command bound to M-FNS
+!endm
+bind-to-key execute-macro-31 M-FNR
+
+; define the select-buffer macro. It binds the appropriate macro to Enter.
+30 store-macro
+	set $discmd FALSE
+	!if &band $cmode 2	; 2 is CMODE mode
+		bind-to-key execute-macro-33 ^M
+	!else
+		bind-to-key execute-macro-34 ^M
+	!endif
+	execute-procedure CursorSize
+	set $discmd TRUE
+!endm
+bind-to-key execute-macro-30 M-FNS
+
+; define the next-line-and-indent macro and bind it to Ctrl-Enter
+29 store-macro
+	end-of-line
+	next-word
+!endm
+bind-to-key execute-macro-29 ^J
+
+; define the split-and-resize-window macro and bind it to ^X2
+;28 store-macro
+;	split-current-window
+;	set $wline &sub $wline $cwline
+;!endm
+;bind-to-key execute-macro-28 ^X2
+
+; define the get-file macro and bind it to Alt-1
+27 store-macro
+	find-file &trim $line
+!endm
+bind-to-key execute-macro-27 FNx
+
+; define the beginning-of-window macro and bind it to Ctrl-PgUp
+26 store-macro
+	set $cwline 1
+!endm
+bind-to-key execute-macro-26 FN„
+
+; define the end-of-window macro and bind it to Ctrl-PgDn
+25 store-macro
+	set $cwline $wline
+!endm
+bind-to-key execute-macro-25 FNv
+
+; define the eval-expression macro and bind it to Alt-E
+24 store-macro
+	set %x $cbufname
+	set %y $cwline
+	select-buffer Tmp
+	insert-string &cat "set %e " @"> "
+	unmark-buffer
+	select-buffer %x
+	execute-buffer Tmp
+	write-message %e
+	%y redraw-display
+	delete-buffer Tmp
+!endm
+bind-to-key execute-macro-24 FN^R
+
+
+; ===================== startup settings =====================
+
+add-global-mode GREEN		; default foreground color
+add-mode	GREEN		; color for first window
+
+add-global-mode magic		; search mode
+
+!if &less $pagelen 28		; minimal screen size
+	set $sres VGA28
+!endif
+
+execute-procedure CursorSize	; initialize cursor size
+
+set $discmd TRUE

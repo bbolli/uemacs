@@ -1038,21 +1038,39 @@ char *s;	/* string to force out */
 }
 
 /*
- * Write out a string. Update the physical cursor position. This assumes that
- * the characters in the string all have width "1"; if this is not the case
- * things will get screwed up a little.
+ * Write out a string, update physical cursor position
+ */
+ttputs(s)
+char *s;
+{
+	while ( *s )
+		TTputc( *s++ ),  ++ttcol;
+}
+
+/*
+ * Write out a character. Handle ^x. Update physical cursor position.
+ */
+mlputc(c)
+unsigned char c;
+{
+
+	if ( c < 0x20 || c == 0x7F )  {
+		TTputc( '^' ),  ++ttcol;
+		c ^= 0x40;
+	}
+	TTputc( c );
+	++ttcol;
+}
+
+/*
+ * Write out a string. Update the physical cursor position.
  */
 mlputs(s)
-    char *s;
-    {
-    register int c;
-
-    while ((c = *s++) != 0)
-        {
-        TTputc(c);
-        ++ttcol;
-        }
-    }
+char *s;
+{
+	while ( *s )
+		mlputc( *s++ );
+}
 
 /*
  * Write out an integer, in the specified radix. Update the physical cursor

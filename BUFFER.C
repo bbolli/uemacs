@@ -108,6 +108,7 @@ BUFFER *bp;
 			wp = wp->w_wndp;
 		}
 	}
+	execute( META|SPEC|'S', FALSE, 1 );     /* do the Setup macro */
 	return (TRUE);
 }
 
@@ -163,6 +164,7 @@ register BUFFER *bp;
 	else
 		bp1->b_bufp = bp2;
 	free((char *) bp);			/* Release buffer block */
+	--bufcnt;				/* decrement buf count	*/
 	return (TRUE);
 }
 
@@ -477,6 +479,11 @@ register char	*bname;
 #endif
 		lp->l_fp = lp;
 		lp->l_bp = lp;
+
+		/* increment buffer count if need be */
+		if ( (bflag & BFINVS) == 0 )
+			++bufcnt;
+
 	}
 	return (bp);
 }

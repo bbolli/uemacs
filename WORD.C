@@ -75,11 +75,11 @@ backword(f, n)
 	if (backchar(FALSE, 1) == FALSE)
 		return (FALSE);
 	while (n--) {
-		while (inword() == FALSE) {
+		while (inword(-1) == FALSE) {
 			if (backchar(FALSE, 1) == FALSE)
 				return (FALSE);
 		}
-		while (inword() != FALSE) {
+		while (inword(-1) != FALSE) {
 			if (backchar(FALSE, 1) == FALSE)
 				return (FALSE);
 		}
@@ -97,17 +97,17 @@ forwword(f, n)
 		return (backword(f, -n));
 	while (n--) {
 #if	NFWORD
-		while (inword() != FALSE) {
+		while (inword(-1) != FALSE) {
 			if (forwchar(FALSE, 1) == FALSE)
 				return (FALSE);
 		}
 #endif
-		while (inword() == FALSE) {
+		while (inword(-1) == FALSE) {
 			if (forwchar(FALSE, 1) == FALSE)
 				return (FALSE);
 		}
 #if	NFWORD == 0
-		while (inword() != FALSE) {
+		while (inword(-1) != FALSE) {
 			if (forwchar(FALSE, 1) == FALSE)
 				return (FALSE);
 		}
@@ -130,11 +130,11 @@ upperword(f, n)
 	if (n < 0)
 		return (FALSE);
 	while (n--) {
-		while (inword() == FALSE) {
+		while (inword(-1) == FALSE) {
 			if (forwchar(FALSE, 1) == FALSE)
 				return (FALSE);
 		}
-		while (inword() != FALSE) {
+		while (inword(-1) != FALSE) {
 			c = lgetc(curwp->w_dotp, curwp->w_doto);
 			if (c>='a' && c<='z') {
 				c -= 'a'-'A';
@@ -162,11 +162,11 @@ lowerword(f, n)
 	if (n < 0)
 		return (FALSE);
 	while (n--) {
-		while (inword() == FALSE) {
+		while (inword(-1) == FALSE) {
 			if (forwchar(FALSE, 1) == FALSE)
 				return (FALSE);
 		}
-		while (inword() != FALSE) {
+		while (inword(-1) != FALSE) {
 			c = lgetc(curwp->w_dotp, curwp->w_doto);
 			if (c>='A' && c<='Z') {
 				c += 'a'-'A';
@@ -195,11 +195,11 @@ capword(f, n)
 	if (n < 0)
 		return (FALSE);
 	while (n--) {
-		while (inword() == FALSE) {
+		while (inword(-1) == FALSE) {
 			if (forwchar(FALSE, 1) == FALSE)
 				return (FALSE);
 		}
-		if (inword() != FALSE) {
+		if (inword(-1) != FALSE) {
 			c = lgetc(curwp->w_dotp, curwp->w_doto);
 			if (c>='a' && c<='z') {
 				c -= 'a'-'A';
@@ -208,7 +208,7 @@ capword(f, n)
 			}
 			if (forwchar(FALSE, 1) == FALSE)
 				return (FALSE);
-			while (inword() != FALSE) {
+			while (inword(-1) != FALSE) {
 				c = lgetc(curwp->w_dotp, curwp->w_doto);
 				if (c>='A' && c<='Z') {
 					c += 'a'-'A';
@@ -258,20 +258,20 @@ delfword(f, n)
 			++size;
 		}
 
-		while ((inword() == FALSE) &&
+		while ((inword(-1) == FALSE) &&
 				(curwp->w_doto != llength(curwp->w_dotp))) {
 			if (forwchar(FALSE, 1) == FALSE)
 				return (FALSE);
 			++size;
 		}
 #else
-		while (inword() == FALSE) {
+		while (inword(-1) == FALSE) {
 			if (forwchar(FALSE, 1) == FALSE)
 				return (FALSE);
 			++size;
 		}
 
-		while (inword() != FALSE) {
+		while (inword(-1) != FALSE) {
 			if (forwchar(FALSE, 1) == FALSE)
 				return (FALSE);
 			++size;
@@ -546,4 +546,3 @@ int f, n;	/* ignored numeric arguments */
 	return(TRUE);
 }
 #endif
-

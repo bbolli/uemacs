@@ -222,7 +222,11 @@ quote(f, n)
 
 	if (curbp->b_mode&MDVIEW)	/* don't allow this command if  */
 		return(rdonly());	/* we are in read only mode	*/
+#if IBMPC & ( TURBO | MSC )
+	c = ectoc( tgetc() );
+#else
 	c = tgetc();
+#endif
 	if (n < 0)
 		return (FALSE);
 	if (n == 0)
@@ -903,9 +907,11 @@ int global;	/* true = global flag,	false = current buffer flag */
 					gmode &= ~(1 << i);
 				else
 					curbp->b_mode &= ~(1 << i);
-			/* display new mode line */
-			if (global == 0)
+			/* display new mode line and re-select buffer */
+			if (!global)  {
 				upmode();
+				execute( META | SPEC | 'S', FALSE, 1 );
+			}
 			mlerase();	/* erase the junk */
 			return(TRUE);
 		}
